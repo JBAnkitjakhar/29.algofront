@@ -1,0 +1,523 @@
+//src/having/adminQuestions/components/QuestionEditorSidebar.tsx
+
+"use client";
+
+import { Editor } from "@tiptap/react";
+import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
+import {
+  Bold,
+  Italic,
+  Code,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Image as ImageIcon,
+  Loader2,
+  Terminal,
+  Undo,
+  Redo,
+  Palette,
+  Highlighter,
+  ArrowLeft,
+} from "lucide-react";
+import { useUploadQuestionImage } from "../hooks";
+import toast from "react-hot-toast";
+import { PROGRAMMING_LANGUAGES, QUESTION_VALIDATION } from "../constants";
+import { ADMIN_ROUTES } from "@/constants";
+
+const COLORS = [
+  "#000000",
+  "#FF0000",
+  "#00FF00",
+  "#0000FF",
+  "#FFFF00",
+  "#FF00FF",
+  "#00FFFF",
+  "#FFA500",
+  "#800080",
+  "#FFC0CB",
+  "#808080",
+  "#8B4513",
+  "#000080",
+  "#008000",
+  "#FF6347",
+];
+
+const HIGHLIGHT_COLORS = [
+  "#FFEB3B",
+  "#FFC107",
+  "#FF9800",
+  "#FF5722",
+  "#4CAF50",
+  "#00BCD4",
+  "#03A9F4",
+  "#2196F3",
+  "#9C27B0",
+  "#E91E63",
+];
+
+interface QuestionEditorSidebarProps {
+  editor: Editor | null;
+  onImageUpload?: (imageUrl: string) => void;
+}
+
+export function QuestionEditorSidebar({
+  editor,
+  onImageUpload,
+}: QuestionEditorSidebarProps) {
+  const router = useRouter();
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [showTextColorPicker, setShowTextColorPicker] = useState(false);
+  const [showHighlightColorPicker, setShowHighlightColorPicker] =
+    useState(false);
+  const [selectedTextColor, setSelectedTextColor] = useState("#000000");
+  const [selectedHighlightColor, setSelectedHighlightColor] =
+    useState("#FFEB3B");
+  const [selectedLanguage, setSelectedLanguage] = useState("javascript");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadImageMutation = useUploadQuestionImage();
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select a valid image file");
+      return;
+    }
+
+    if (file.size > QUESTION_VALIDATION.MAX_IMAGE_SIZE) {
+      toast.error(
+        `Image size must be less than ${
+          QUESTION_VALIDATION.MAX_IMAGE_SIZE / (1024 * 1024)
+        }MB`
+      );
+      return;
+    }
+
+    if (!editor) {
+      console.error("❌ Editor is not available yet");
+      toast.error("Editor is not ready. Please try again.");
+      return;
+    }
+
+    setIsUploadingImage(true);
+
+    try {
+      const result = await uploadImageMutation.mutateAsync(file);
+
+      if (result.secure_url) {
+        if (!editor) {
+          console.error("❌ Editor became unavailable during upload");
+          toast.error("Editor is not ready. Please refresh and try again.");
+          return;
+        }
+
+        try {
+          editor
+            .chain()
+            .focus()
+            .insertContent({
+              type: "image",
+              attrs: {
+                src: result.secure_url,
+                alt: file.name,
+              },
+            })
+            .run();
+
+          editor.chain().focus().insertContent("<p></p>").run();
+        } catch (insertError) {
+          console.error(
+            "❌ Insert failed, trying setImage method:",
+            insertError
+          );
+
+          editor.chain().focus().setImage({ src: result.secure_url }).run();
+        }
+
+        if (onImageUpload) {
+          onImageUpload(result.secure_url);
+        }
+
+        toast.success("Image uploaded and inserted");
+      } else {
+        console.error("❌ No secure_url in response:", result);
+        toast.error("Upload failed - no URL returned");
+      }
+    } catch (error) {
+      console.error("❌ Upload failed:", error);
+      toast.error("Failed to upload image");
+    } finally {
+      setIsUploadingImage(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const insertCodeBlock = () => {
+    if (editor) {
+      editor.chain().focus().setCodeBlock({ language: selectedLanguage }).run();
+    }
+  };
+
+  if (!editor) return null;
+
+  return (
+    <div className="w-64 border-r border-gray-700 bg-[#262626] flex-shrink-0">
+      <div className="sticky top-0 p-4 space-y-4 max-h-screen overflow-y-auto">
+        {/* Back Button */}
+        <button
+          onClick={() => router.push(ADMIN_ROUTES.QUESTIONS)}
+          className="flex items-center text-gray-300 hover:text-white font-medium transition-colors w-full"
+        >
+          <ArrowLeft className="w-5 h-5 mr-2" />
+          Back to Questions
+        </button>
+
+        <div className="border-t border-gray-700" />
+
+        {/* Text Style */}
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+            Text Style
+          </p>
+          <div className="flex flex-col gap-1">
+            <button
+              type="button"
+              onClick={() => editor.chain().focus().toggleBold().run()}
+              className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
+                editor.isActive("bold")
+                  ? "bg-blue-900/30 text-blue-400 border border-blue-500/30"
+                  : "hover:bg-gray-700 text-gray-300 border border-gray-700"
+              }`}
+            >
+              <Bold className="w-4 h-4" />
+              <span>Bold</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => editor.chain().focus().toggleItalic().run()}
+              className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
+                editor.isActive("italic")
+                  ? "bg-blue-900/30 text-blue-400 border border-blue-500/30"
+                  : "hover:bg-gray-700 text-gray-300 border border-gray-700"
+              }`}
+            >
+              <Italic className="w-4 h-4" />
+              <span>Italic</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => editor.chain().focus().toggleCode().run()}
+              className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
+                editor.isActive("code")
+                  ? "bg-blue-900/30 text-blue-400 border border-blue-500/30"
+                  : "hover:bg-gray-700 text-gray-300 border border-gray-700"
+              }`}
+            >
+              <Code className="w-4 h-4" />
+              <span>Code</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Text Alignment */}
+        <div className="space-y-2 pt-2 border-t border-gray-700">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+            Alignment
+          </p>
+          <div className="flex flex-col gap-1">
+            <button
+              type="button"
+              onClick={() => editor.chain().focus().setTextAlign("left").run()}
+              className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
+                editor.isActive({ textAlign: "left" })
+                  ? "bg-blue-900/30 text-blue-400 border border-blue-500/30"
+                  : "hover:bg-gray-700 text-gray-300 border border-gray-700"
+              }`}
+            >
+              <AlignLeft className="w-4 h-4" />
+              <span>Align Left</span>
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                editor.chain().focus().setTextAlign("center").run()
+              }
+              className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
+                editor.isActive({ textAlign: "center" })
+                  ? "bg-blue-900/30 text-blue-400 border border-blue-500/30"
+                  : "hover:bg-gray-700 text-gray-300 border border-gray-700"
+              }`}
+            >
+              <AlignCenter className="w-4 h-4" />
+              <span>Align Center</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => editor.chain().focus().setTextAlign("right").run()}
+              className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
+                editor.isActive({ textAlign: "right" })
+                  ? "bg-blue-900/30 text-blue-400 border border-blue-500/30"
+                  : "hover:bg-gray-700 text-gray-300 border border-gray-700"
+              }`}
+            >
+              <AlignRight className="w-4 h-4" />
+              <span>Align Right</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Colors */}
+        <div className="space-y-2 pt-2 border-t border-gray-700">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+            Colors
+          </p>
+
+          {/* Text Color */}
+          <div className="space-y-1">
+            <label className="text-xs text-gray-400">Text Color</label>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowTextColorPicker(!showTextColorPicker)}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-gray-700 border border-gray-700 transition-colors text-gray-300"
+              >
+                <Palette className="w-4 h-4" />
+                <span className="flex-1 text-left">Select Color</span>
+                <div
+                  className="w-6 h-6 rounded border border-gray-600"
+                  style={{ backgroundColor: selectedTextColor }}
+                />
+              </button>
+
+              {showTextColorPicker && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setShowTextColorPicker(false)}
+                  />
+                  <div className="absolute left-0 top-full mt-1 p-3 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-20 w-full">
+                    {/* Custom Color Picker */}
+                    <div className="mb-3">
+                      <label className="block text-xs font-medium text-gray-300 mb-1">
+                        Pick Custom Color
+                      </label>
+                      <input
+                        type="color"
+                        value={selectedTextColor}
+                        onChange={(e) => {
+                          const color = e.target.value;
+                          setSelectedTextColor(color);
+                          editor?.chain().focus().setColor(color).run();
+                        }}
+                        className="w-full h-10 rounded border border-gray-600 cursor-pointer bg-gray-700"
+                      />
+                    </div>
+
+                    {/* Preset Colors */}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-300 mb-1">
+                        Quick Colors
+                      </label>
+                      <div className="grid grid-cols-5 gap-1">
+                        {COLORS.map((color) => (
+                          <button
+                            key={color}
+                            type="button"
+                            onClick={() => {
+                              editor.chain().focus().setColor(color).run();
+                              setSelectedTextColor(color);
+                              setShowTextColorPicker(false);
+                            }}
+                            className="w-full h-8 rounded border border-gray-600 hover:scale-110 transition-transform"
+                            style={{ backgroundColor: color }}
+                            title={color}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Highlight Color */}
+          <div className="space-y-1">
+            <label className="text-xs text-gray-400">Highlight</label>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() =>
+                  setShowHighlightColorPicker(!showHighlightColorPicker)
+                }
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-gray-700 border border-gray-700 transition-colors text-gray-300"
+              >
+                <Highlighter className="w-4 h-4" />
+                <span className="flex-1 text-left">Select Color</span>
+                <div
+                  className="w-6 h-6 rounded border border-gray-600"
+                  style={{ backgroundColor: selectedHighlightColor }}
+                />
+              </button>
+
+              {showHighlightColorPicker && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setShowHighlightColorPicker(false)}
+                  />
+                  <div className="absolute left-0 top-full mt-1 p-3 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-20 w-full">
+                    {/* Custom Color Picker */}
+                    <div className="mb-3">
+                      <label className="block text-xs font-medium text-gray-300 mb-1">
+                        Pick Custom Color
+                      </label>
+                      <input
+                        type="color"
+                        value={selectedHighlightColor}
+                        onChange={(e) => {
+                          const color = e.target.value;
+                          setSelectedHighlightColor(color);
+                          editor
+                            ?.chain()
+                            .focus()
+                            .toggleHighlight({ color })
+                            .run();
+                        }}
+                        className="w-full h-10 rounded border border-gray-600 cursor-pointer bg-gray-700"
+                      />
+                    </div>
+
+                    {/* Preset Colors */}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-300 mb-1">
+                        Quick Colors
+                      </label>
+                      <div className="grid grid-cols-5 gap-1">
+                        {HIGHLIGHT_COLORS.map((color) => (
+                          <button
+                            key={color}
+                            type="button"
+                            onClick={() => {
+                              editor
+                                .chain()
+                                .focus()
+                                .toggleHighlight({ color })
+                                .run();
+                              setSelectedHighlightColor(color);
+                              setShowHighlightColorPicker(false);
+                            }}
+                            className="w-full h-8 rounded border border-gray-600 hover:scale-110 transition-transform"
+                            style={{ backgroundColor: color }}
+                            title={color}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Image Upload */}
+        <div className="space-y-2 pt-2 border-t border-gray-700">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+            Media
+          </p>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploadingImage}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-gray-700 border border-gray-700 disabled:opacity-50 transition-colors text-gray-300"
+          >
+            {isUploadingImage ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Uploading...</span>
+              </>
+            ) : (
+              <>
+                <ImageIcon className="w-4 h-4" />
+                <span>Insert Image</span>
+              </>
+            )}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleImageUpload}
+          />
+          <p className="text-xs text-gray-500 px-1">Max 2MB per image</p>
+        </div>
+
+        {/* Code Block */}
+        <div className="space-y-2 pt-2 border-t border-gray-700">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+            Code Block
+          </p>
+          <div className="space-y-2">
+            <select
+              value={selectedLanguage}
+              onChange={(e) => setSelectedLanguage(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-800 text-white"
+            >
+              {PROGRAMMING_LANGUAGES.map((lang) => (
+                <option key={lang.value} value={lang.value}>
+                  {lang.label}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={insertCodeBlock}
+              className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
+                editor.isActive("codeBlock")
+                  ? "bg-blue-900/30 text-blue-400 border border-blue-500/30"
+                  : "hover:bg-gray-700 text-gray-300 border border-gray-700"
+              }`}
+            >
+              <Terminal className="w-4 h-4" />
+              <span>Insert Code Block</span>
+            </button>
+          </div>
+        </div>
+
+        {/* History */}
+        <div className="space-y-2 pt-2 border-t border-gray-700">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+            History
+          </p>
+          <div className="flex flex-col gap-1">
+            <button
+              type="button"
+              onClick={() => editor.chain().focus().undo().run()}
+              disabled={!editor.can().undo()}
+              className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-gray-700 text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-gray-700"
+            >
+              <Undo className="w-4 h-4" />
+              <span>Undo</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => editor.chain().focus().redo().run()}
+              disabled={!editor.can().redo()}
+              className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-gray-700 text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-gray-700"
+            >
+              <Redo className="w-4 h-4" />
+              <span>Redo</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
