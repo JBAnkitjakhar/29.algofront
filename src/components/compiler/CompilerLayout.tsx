@@ -516,7 +516,6 @@ export const CompilerLayout: React.FC = () => {
   };
 
   const handleRunCode = () => {
-    // Check if code requires input but none provided
     if (doesCodeRequireInput(code) && !input.trim()) {
       setOutput(
         `❌ Input Required!\n\n${getInputRequirementMessage(
@@ -536,72 +535,107 @@ export const CompilerLayout: React.FC = () => {
       },
       {
         onSuccess: (response) => {
-          // Handle ApiResponse structure correctly
           if (!response.success || !response.data) {
             setOutput("❌ Invalid response from server");
             return;
           }
 
-          // Handle nested response structure with proper typing
           let result = response.data;
-
-          // Check if there's another data layer and unwrap it
           if (result.data && !result.run) {
             result = result.data;
           }
 
-          // Check if the backend indicates failure
           if (result.successful === false && result.errorMessage) {
             setOutput(`❌ Backend Error: ${result.errorMessage}`);
             return;
           }
 
           let outputText = "";
+          const isSuccess = result.run && result.run.code === 0;
 
-          // Show compilation output if present
-          if (result.compile) {
-            if (result.compile.stderr) {
-              outputText += `❌ Compilation Error:\n${result.compile.stderr}\n\n`;
-            }
-            if (result.compile.stdout) {
-              outputText += `📋 Compilation Output:\n${result.compile.stdout}\n\n`;
-            }
-            if (result.compile.code !== 0) {
-              outputText += `❌ Compilation failed with exit code: ${result.compile.code}\n\n`;
-              outputText += `💡 Common fixes:\n- Check syntax errors\n- Verify class name matches filename\n- Check for missing semicolons or brackets\n\n`;
+          // Show execution metrics at the top (only for successful runs)
+          if (isSuccess && result.run) {
+            const cpuTime = result.run.cpuTime;
+            const memory = result.run.memory;
+
+            if (cpuTime !== null || memory !== null) {
+              outputText += "📊 Execution Metrics:\n";
+              outputText += "─────────────────────\n";
+
+              if (cpuTime !== null) {
+                outputText += `⏱️  CPU Time: ${cpuTime} ms\n`;
+              }
+
+              if (memory !== null) {
+                const memoryMB = (memory / (1024 * 1024)).toFixed(2);
+                outputText += `💾 Memory: ${memoryMB} MB\n`;
+              }
+
+              outputText += "─────────────────────\n\n";
             }
           }
 
-          // Check if run exists and show runtime output
-          if (result.run && typeof result.run === "object") {
-            if (result.run.stderr) {
-              outputText += `🚨 Runtime Error:\n${result.run.stderr}\n`;
-
-              // Add helpful hints for common errors
-              if (result.run.stderr.includes("NoSuchElementException")) {
-                outputText += `\n💡 Hint: This error usually means your program expected more input than provided.\n`;
-              } else if (result.run.stderr.includes("InputMismatchException")) {
-                outputText += `\n💡 Hint: Input type mismatch. Check if you're providing the correct data type.\n`;
-              } else if (
-                result.run.stderr.includes("ArrayIndexOutOfBoundsException")
-              ) {
-                outputText += `\n💡 Hint: Array index error. Check your array bounds.\n`;
-              } else if (result.run.stderr.includes("NullPointerException")) {
-                outputText += `\n💡 Hint: Null pointer error. Initialize your variables before using them.\n`;
+          // Show compilation errors/warnings
+          if (result.compile) {
+            if (result.compile.code !== 0) {
+              // Compilation failed
+              if (result.compile.stderr) {
+                outputText += `❌ Compilation Error:\n${result.compile.stderr}\n\n`;
               }
+              if (result.compile.stdout) {
+                outputText += `📋 Compilation Output:\n${result.compile.stdout}\n\n`;
+              }
+              outputText += `💡 Common fixes:\n- Check syntax errors\n- Verify class name matches filename\n- Check for missing semicolons or brackets\n\n`;
+            } else if (result.compile.stderr) {
+              // Compilation succeeded but has warnings
+              outputText += `⚠️  Compilation Warnings:\n${result.compile.stderr}\n\n`;
             }
+          }
 
-            if (result.run.stdout) {
-              outputText += result.run.stdout;
-            }
+          // Handle runtime output
+          if (result.run && typeof result.run === "object") {
+            // Check if this is an actual error (exit code != 0)
+            if (result.run.code !== 0) {
+              // Actual runtime error
+              if (result.run.stderr) {
+                outputText += `🚨 Runtime Error:\n${result.run.stderr}\n`;
 
-            if (result.run.code !== 0 && !result.run.stderr) {
+                // Add helpful hints for common errors
+                if (result.run.stderr.includes("NoSuchElementException")) {
+                  outputText += `\n💡 Hint: This error usually means your program expected more input than provided.\n`;
+                } else if (
+                  result.run.stderr.includes("InputMismatchException")
+                ) {
+                  outputText += `\n💡 Hint: Input type mismatch. Check if you're providing the correct data type.\n`;
+                } else if (
+                  result.run.stderr.includes("ArrayIndexOutOfBoundsException")
+                ) {
+                  outputText += `\n💡 Hint: Array index error. Check your array bounds.\n`;
+                } else if (result.run.stderr.includes("NullPointerException")) {
+                  outputText += `\n💡 Hint: Null pointer error. Initialize your variables before using them.\n`;
+                }
+              }
+
+              if (result.run.stdout) {
+                outputText += `\nPartial Output:\n${result.run.stdout}\n`;
+              }
+
               outputText += `\n⚠️ Program exited with code: ${result.run.code}`;
-            } else if (result.run.code === 0 && result.run.stdout) {
-              outputText += `\n✅ Program completed successfully!`;
+            } else {
+              // Success (exit code 0)
+              // Show stdout (actual output)
+              if (result.run.stdout) {
+                outputText += result.run.stdout;
+              }
+
+              // Show warnings if any (stderr with exit code 0 = warnings)
+              if (result.run.stderr) {
+                outputText += `\n\n⚠️  Warnings:\n${result.run.stderr}`;
+              }
+
+              outputText += `\n\n✅ Program completed successfully!`;
             }
           } else {
-            // Handle case where run is still missing
             outputText += `❌ Could not find execution results\n`;
             outputText += `Available properties: ${Object.keys(result).join(
               ", "
@@ -1098,14 +1132,14 @@ export const CompilerLayout: React.FC = () => {
               style={{ height: `${inputPanelHeight}%` }}
             >
               <div className="px-3 py-1.5 bg-[#262626] border-b border-gray-700">
-                <h3 className="text-xs font-medium text-gray-300">Input</h3>
+                <h3 className="text-xs font-medium text-gray-400">Input</h3>
               </div>
               <div className="flex-1 p-2 min-h-0">
                 <textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Enter input for your program (each input on a new line)..."
-                  className="w-full h-full resize-none border border-gray-700 rounded-md p-2 text-sm font-mono bg-gray-800 text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 overflow-auto"
+                  className="w-full h-full resize-none border border-gray-700 rounded-md p-2 text-sm font-mono bg-[#262626] text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 overflow-auto"
                   style={{ fontSize: `${fontSize - 2}px` }}
                   disabled={isPending}
                 />
@@ -1126,11 +1160,11 @@ export const CompilerLayout: React.FC = () => {
               style={{ height: `${100 - inputPanelHeight}%` }}
             >
               <div className="flex items-center justify-between px-3 py-1.5 bg-[#262626] border-b border-gray-700">
-                <h3 className="text-xs font-medium text-gray-300">Output</h3>
+                <h3 className="text-xs font-medium text-gray-400">Output</h3>
                 {output && (
                   <button
                     onClick={handleCopyOutput}
-                    className="flex items-center space-x-1 px-2 py-1 text-xs bg-gray-700 text-gray-300 rounded hover:bg-gray-600 transition-colors"
+                    className="flex items-center space-x-1 px-2 py-1 text-xs bg-[#514f4f] text-gray-300 rounded hover:bg-gray-600 transition-colors"
                   >
                     {isOutputCopied ? <Check size={10} /> : <Copy size={10} />}
                     <span>{isOutputCopied ? "Copied!" : "Copy"}</span>
@@ -1139,7 +1173,7 @@ export const CompilerLayout: React.FC = () => {
               </div>
               <div className="flex-1 p-2 min-h-0">
                 <pre
-                  className="w-full h-full text-sm font-mono bg-gray-900 border border-gray-700 rounded-md p-2 whitespace-pre-wrap break-words overflow-auto text-gray-100"
+                  className="w-full h-full text-sm font-mono bg-[#262626] border border-gray-700 rounded-md p-2 whitespace-pre-wrap break-words overflow-auto text-gray-300"
                   style={{ fontSize: `${fontSize - 2}px` }}
                 >
                   {isPending

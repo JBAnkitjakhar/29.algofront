@@ -1,4 +1,4 @@
-// src/having/userQuestion/components/QuestionCompilerLayout.tsx 
+// src/having/userQuestion/components/QuestionCompilerLayout.tsx
 
 "use client";
 
@@ -274,7 +274,7 @@ export function QuestionCompilerLayout({
   const { mutate: executeCode, isPending } = useCodeExecution();
   const createApproachMutation = useCreateApproach();
   const { data: approaches } = useApproachesByQuestion(question.id);
-  
+
   const debouncedResizeEditor = useCallback(() => {
     if (resizeTimeoutRef.current) {
       clearTimeout(resizeTimeoutRef.current);
@@ -325,25 +325,34 @@ export function QuestionCompilerLayout({
         doc.mozFullScreenElement ||
         doc.msFullscreenElement
       );
-      
+
       setIsFullscreen(isCurrentlyFullscreen);
-      
+
       // Trigger layout recalculation after a short delay
       setTimeout(() => {
         debouncedResizeEditor();
       }, 100);
     };
 
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
-    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    document.addEventListener("mozfullscreenchange", handleFullscreenChange);
+    document.addEventListener("MSFullscreenChange", handleFullscreenChange);
 
     return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
-      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
-      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener(
+        "webkitfullscreenchange",
+        handleFullscreenChange
+      );
+      document.removeEventListener(
+        "mozfullscreenchange",
+        handleFullscreenChange
+      );
+      document.removeEventListener(
+        "MSFullscreenChange",
+        handleFullscreenChange
+      );
     };
   }, [debouncedResizeEditor]);
 
@@ -592,45 +601,86 @@ export function QuestionCompilerLayout({
           }
 
           let outputText = "";
+          const isSuccess = result.run && result.run.code === 0;
 
-          if (result.compile) {
-            if (result.compile.stderr) {
-              outputText += `❌ Compilation Error:\n${result.compile.stderr}\n\n`;
-            }
-            if (result.compile.stdout) {
-              outputText += `📋 Compilation Output:\n${result.compile.stdout}\n\n`;
-            }
-            if (result.compile.code !== 0) {
-              outputText += `❌ Compilation failed with exit code: ${result.compile.code}\n\n`;
-              outputText += `💡 Common fixes:\n- Check syntax errors\n- Verify class name matches filename\n- Check for missing semicolons or brackets\n\n`;
+          // Show execution metrics at the top (only for successful runs)
+          if (isSuccess && result.run) {
+            const cpuTime = result.run.cpuTime;
+            const memory = result.run.memory;
+
+            if (cpuTime !== null || memory !== null) {
+              outputText += "📊 Execution Metrics:\n";
+              outputText += "─────────────────────\n";
+
+              if (cpuTime !== null) {
+                outputText += `⏱️  CPU Time: ${cpuTime} ms\n`;
+              }
+
+              if (memory !== null) {
+                const memoryMB = (memory / (1024 * 1024)).toFixed(2);
+                outputText += `💾 Memory: ${memoryMB} MB\n`;
+              }
+
+              outputText += "─────────────────────\n\n";
             }
           }
 
-          if (result.run && typeof result.run === "object") {
-            if (result.run.stderr) {
-              outputText += `🚨 Runtime Error:\n${result.run.stderr}\n`;
-
-              if (result.run.stderr.includes("NoSuchElementException")) {
-                outputText += `\n💡 Hint: This error usually means your program expected more input than provided.\n`;
-              } else if (result.run.stderr.includes("InputMismatchException")) {
-                outputText += `\n💡 Hint: Input type mismatch. Check if you're providing the correct data type.\n`;
-              } else if (
-                result.run.stderr.includes("ArrayIndexOutOfBoundsException")
-              ) {
-                outputText += `\n💡 Hint: Array index error. Check your array bounds.\n`;
-              } else if (result.run.stderr.includes("NullPointerException")) {
-                outputText += `\n💡 Hint: Null pointer error. Initialize your variables before using them.\n`;
+          // Show compilation errors/warnings
+          if (result.compile) {
+            if (result.compile.code !== 0) {
+              // Compilation failed
+              if (result.compile.stderr) {
+                outputText += `❌ Compilation Error:\n${result.compile.stderr}\n\n`;
               }
+              if (result.compile.stdout) {
+                outputText += `📋 Compilation Output:\n${result.compile.stdout}\n\n`;
+              }
+              outputText += `💡 Common fixes:\n- Check syntax errors\n- Verify class name matches filename\n- Check for missing semicolons or brackets\n\n`;
+            } else if (result.compile.stderr) {
+              // Compilation succeeded but has warnings
+              outputText += `⚠️  Compilation Warnings:\n${result.compile.stderr}\n\n`;
             }
+          }
 
-            if (result.run.stdout) {
-              outputText += result.run.stdout;
-            }
+          // Handle runtime output
+          if (result.run && typeof result.run === "object") {
+            // Check if this is an actual error (exit code != 0)
+            if (result.run.code !== 0) {
+              // Actual runtime error
+              if (result.run.stderr) {
+                outputText += `🚨 Runtime Error:\n${result.run.stderr}\n`;
 
-            if (result.run.code !== 0 && !result.run.stderr) {
+                if (result.run.stderr.includes("NoSuchElementException")) {
+                  outputText += `\n💡 Hint: This error usually means your program expected more input than provided.\n`;
+                } else if (
+                  result.run.stderr.includes("InputMismatchException")
+                ) {
+                  outputText += `\n💡 Hint: Input type mismatch. Check if you're providing the correct data type.\n`;
+                } else if (
+                  result.run.stderr.includes("ArrayIndexOutOfBoundsException")
+                ) {
+                  outputText += `\n💡 Hint: Array index error. Check your array bounds.\n`;
+                } else if (result.run.stderr.includes("NullPointerException")) {
+                  outputText += `\n💡 Hint: Null pointer error. Initialize your variables before using them.\n`;
+                }
+              }
+
+              if (result.run.stdout) {
+                outputText += `\nPartial Output:\n${result.run.stdout}\n`;
+              }
+
               outputText += `\n⚠️ Program exited with code: ${result.run.code}`;
-            } else if (result.run.code === 0 && result.run.stdout) {
-              outputText += `\n✅ Program completed successfully!`;
+            } else {
+              // Success (exit code 0)
+              if (result.run.stdout) {
+                outputText += result.run.stdout;
+              }
+
+              if (result.run.stderr) {
+                outputText += `\n\n⚠️  Warnings:\n${result.run.stderr}`;
+              }
+
+              outputText += `\n\n✅ Program completed successfully!`;
             }
           } else {
             outputText += `❌ Could not find execution results\n`;
@@ -911,7 +961,10 @@ export function QuestionCompilerLayout({
       </div>
 
       {/* Main Layout: Code Editor + Toggleable Input/Output */}
-      <div className="flex-1 flex flex-col min-h-0" key={`editor-${isFullscreen}`}>
+      <div
+        className="flex-1 flex flex-col min-h-0"
+        key={`editor-${isFullscreen}`}
+      >
         {/* Code Editor Section */}
         <div
           className="flex flex-col"
@@ -970,10 +1023,8 @@ export function QuestionCompilerLayout({
                 className="flex flex-col min-h-0"
                 style={{ width: showOutput ? `${inputPanelWidth}%` : "100%" }}
               >
-                <div className="flex items-center justify-between px-3 py-1.5 bg-[#1A1A1A] border-b border-gray-700">
-                  <h3 className="text-xs font-medium text-gray-300">
-                    Input
-                  </h3>
+                <div className="flex items-center justify-between px-3 py-1.5 bg-[#262626] border-b border-gray-700">
+                  <h3 className="text-xs font-medium text-gray-300">Input</h3>
                   <button
                     onClick={() => setShowInput(false)}
                     className="p-1 hover:bg-gray-700 rounded"
@@ -987,7 +1038,7 @@ export function QuestionCompilerLayout({
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     placeholder="Enter input for your program (each input on a new line)..."
-                    className="w-full h-full resize-none border border-gray-600 rounded-md p-2 text-sm font-mono bg-[#1A1A1A] text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 overflow-auto"
+                    className="w-full h-full resize-none border border-gray-600 rounded-md p-2 text-sm font-mono bg-[#262626] text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 overflow-auto"
                     style={{ fontSize: `${fontSize - 2}px` }}
                     disabled={isPending}
                   />
@@ -1013,10 +1064,8 @@ export function QuestionCompilerLayout({
                   width: showInput ? `${100 - inputPanelWidth}%` : "100%",
                 }}
               >
-                <div className="flex items-center justify-between px-3 py-1.5 bg-[#1A1A1A] border-b border-gray-700">
-                  <h3 className="text-xs font-medium text-gray-300">
-                    Output
-                  </h3>
+                <div className="flex items-center justify-between px-3 py-1.5 bg-[#262626] border-b border-gray-700">
+                  <h3 className="text-xs font-medium text-gray-300">Output</h3>
                   <div className="flex items-center space-x-2">
                     {output && (
                       <button
@@ -1042,7 +1091,7 @@ export function QuestionCompilerLayout({
                 </div>
                 <div className="flex-1 p-2 min-h-0">
                   <pre
-                    className="w-full h-full text-sm font-mono bg-[#1A1A1A] border border-gray-600 rounded-md p-2 whitespace-pre-wrap break-words overflow-auto text-gray-100"
+                    className="w-full h-full text-sm font-mono bg-[#262626] border border-gray-600 rounded-md p-2 whitespace-pre-wrap break-words overflow-auto text-gray-300"
                     style={{ fontSize: `${fontSize - 2}px` }}
                   >
                     {isPending

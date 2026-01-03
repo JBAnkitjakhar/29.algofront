@@ -3,7 +3,6 @@
 import { apiClient } from './client';
 import { ApiResponse } from '@/types';
 
-// Type definitions matching backend DTOs
 export interface ExecutionRequest {
   language: string;
   version: string;
@@ -19,9 +18,11 @@ export interface ExecutionResult {
   output: string;
   code: number;
   signal: string | null;
+  cpuTime: number | null;    // NEW: CPU time in milliseconds
+  wallTime: number | null;   // NEW: Wall time in milliseconds
+  memory: number | null;     // NEW: Memory in bytes
 }
 
-// Core execution response structure
 export interface ExecutionResponse {
   language: string;
   version: string;
@@ -32,7 +33,6 @@ export interface ExecutionResponse {
   output: string;
 }
 
-// Wrapper type for the nested response structure from backend
 export interface WrappedExecutionResponse {
   data?: ExecutionResponse;
   language?: string;
@@ -51,7 +51,6 @@ export interface Runtime {
   runtime?: string;
 }
 
-// Health check response type
 export interface HealthCheckResponse {
   status: string;
   responseTime?: number;
@@ -61,26 +60,21 @@ export interface HealthCheckResponse {
 }
 
 export class CompilerService {
-  // Execute code
   async executeCode(request: ExecutionRequest): Promise<ApiResponse<WrappedExecutionResponse>> {
     return apiClient.post<WrappedExecutionResponse>('/compiler/execute', request);
   }
 
-  // Get available runtimes
   async getRuntimes(): Promise<ApiResponse<Runtime[]>> {
     return apiClient.get<Runtime[]>('/compiler/runtimes');
   }
 
-  // Get supported languages
   async getSupportedLanguages(): Promise<ApiResponse<string[]>> {
     return apiClient.get<string[]>('/compiler/languages');
   }
 
-  // Health check - Fixed: Replaced any with proper type
   async healthCheck(): Promise<ApiResponse<HealthCheckResponse>> {
     return apiClient.get<HealthCheckResponse>('/compiler/health');
   }
 }
 
-// Export singleton instance
 export const compilerService = new CompilerService();
