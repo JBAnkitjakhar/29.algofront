@@ -179,6 +179,14 @@ export function QuestionEditorSidebar({
 
         <div className="border-t border-gray-700" />
 
+        {/* Info Box */}
+        <div className="p-3 bg-blue-900/20 border border-blue-700 rounded-md">
+          <p className="text-xs text-blue-400">
+            💡 This sidebar only works for the <strong>Statement</strong> tab.
+            Use the tab editors for code templates and testcases.
+          </p>
+        </div>
+
         {/* Text Style */}
         <div className="space-y-2">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">

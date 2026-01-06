@@ -1,12 +1,13 @@
-// src/having/adminquestions/types.ts
+// src/having/adminQuestions/types.ts
 
 export type QuestionLevel = "EASY" | "MEDIUM" | "HARD";
 
-// Code Snippet
-export interface CodeSnippet {
-  language: string;
-  code: string;
-  description: string;
+// Testcase structure
+export interface Testcase {
+  id: number;
+  input: Record<string, unknown>;
+  expectedOutput: unknown;
+  expectedTimeLimit: number;
 }
 
 // Question Summary (from /admin/questions/summary)
@@ -17,7 +18,15 @@ export interface QuestionSummary {
   categoryId: string;
   displayOrder: number;
   imageCount: number;
-  hasCodeSnippets: boolean;
+  
+  // ✅ NEW: Code template languages
+  userStarterCodeLanguages: string[];
+  generalTemplateLanguages: string[];
+  correctSolutionLanguages: string[];
+  
+  // ✅ NEW: Testcase count
+  testcaseCount: number;
+  
   createdByName: string;
   updatedAt: string;
   solutionCount: number;
@@ -57,7 +66,15 @@ export interface QuestionDetail {
   statement: string;
   imageUrls: string[] | null;
   imageFolderUrl: string | null;
-  codeSnippets: CodeSnippet[];
+  
+  // ✅ NEW: Code templates (multi-language maps)
+  userStarterCode: Record<string, string>;
+  generalTemplate: Record<string, string>;
+  correctSolution: Record<string, string>;
+  
+  // ✅ NEW: Testcases
+  testcases: Testcase[];
+  
   categoryId: string;
   level: QuestionLevel;
   displayOrder: number;
@@ -75,18 +92,27 @@ export interface CreateQuestionRequest {
   level: QuestionLevel;
   displayOrder: number;
   imageUrls?: string[];
-  codeSnippets?: CodeSnippet[];
+  imageFolderUrl?: string;
+  userStarterCode?: Record<string, string>;
+  generalTemplate?: Record<string, string>;
+  correctSolution?: Record<string, string>;
+  testcases?: Testcase[];
 }
 
 // Update Question Request
 export interface UpdateQuestionRequest {
+  version?: number;
   title?: string;
   statement?: string;
   categoryId?: string;
   level?: QuestionLevel;
   displayOrder?: number;
   imageUrls?: string[];
-  codeSnippets?: CodeSnippet[];
+  imageFolderUrl?: string;
+  userStarterCode?: Record<string, string>;
+  generalTemplate?: Record<string, string>;
+  correctSolution?: Record<string, string>;
+  testcases?: Testcase[];
 }
 
 // Question with Category Name (for display)

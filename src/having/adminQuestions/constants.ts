@@ -32,11 +32,17 @@ export const QUESTION_VALIDATION = {
   TITLE_MIN_LENGTH: 5,
   TITLE_MAX_LENGTH: 200,
   STATEMENT_MIN_LENGTH: 20,
-  STATEMENT_MAX_LENGTH: 15000, // ✅ 15k characters  
+  STATEMENT_MAX_LENGTH: 15000, // 15k characters for question statement
   MAX_IMAGES_PER_QUESTION: 5,
   MAX_IMAGE_SIZE: 2 * 1024 * 1024, // 2MB per image
-  MAX_CODE_SNIPPETS: 10,
-  CODE_SNIPPET_MAX_LENGTH: 2000, // ✅ NEW: 2k chars per template
+  
+  // ✅ NEW: Code template limits
+  USER_STARTER_CODE_MAX_LENGTH: 3000, // 3k per language
+  GENERAL_TEMPLATE_MAX_LENGTH: 20000, // 20k per language
+  CORRECT_SOLUTION_MAX_LENGTH: 23000, // 23k per language
+  
+  // ✅ NEW: Testcase limits
+  TESTCASES_MAX_LENGTH: 30000, // 30k total for all testcases
 } as const;
 
 export const PROGRAMMING_LANGUAGES = [

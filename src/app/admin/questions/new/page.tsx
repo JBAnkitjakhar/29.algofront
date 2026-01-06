@@ -4,7 +4,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Editor } from "@tiptap/react";
-import { QuestionEditor } from "@/having/adminQuestions/components";
+import {
+  QuestionEditorSidebar,
+  QuestionEditorWithTabs,
+} from "@/having/adminQuestions/components";
 import {
   useCreateQuestion,
   useCategoriesMetadata,
@@ -23,8 +26,6 @@ import {
   XIcon,
   ImageIcon,
 } from "lucide-react";
-import { QuestionEditorSidebar } from "@/having/adminQuestions/components/QuestionEditorSidebar";
-import { CodeSnippetsManager } from "@/having/adminQuestions/components";
 import toast from "react-hot-toast";
 import Image from "next/image";
 import apiClient from "@/lib/api/client";
@@ -39,7 +40,10 @@ export default function CreateQuestionPage() {
     level: "EASY",
     displayOrder: 1,
     imageUrls: [],
-    codeSnippets: [],
+    userStarterCode: {},
+    generalTemplate: {},
+    correctSolution: {},
+    testcases: [],
   });
   const [errors, setErrors] = useState<string[]>([]);
   const [statementCharCount, setStatementCharCount] = useState(0);
@@ -58,10 +62,7 @@ export default function CreateQuestionPage() {
   };
 
   const handleImageUpload = (imageUrl: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      imageUrls: [...(prev.imageUrls || []), imageUrl],
-    }));
+    console.log("✅ Image uploaded:", imageUrl);
   };
 
   const extractPublicIdFromUrl = (url: string): string | null => {
@@ -153,6 +154,7 @@ export default function CreateQuestionPage() {
   const validateForm = (): string[] => {
     const errors: string[] = [];
 
+    // Title validation
     if (!formData.title.trim()) {
       errors.push("Question title is required");
     } else {
@@ -168,6 +170,7 @@ export default function CreateQuestionPage() {
       }
     }
 
+    // Statement validation
     if (!formData.statement.trim()) {
       errors.push("Question statement is required");
     } else {
@@ -186,24 +189,49 @@ export default function CreateQuestionPage() {
       }
     }
 
+    // Category validation
     if (!formData.categoryId) {
       errors.push("Category is required");
     }
 
+    // Display order validation
     if (!formData.displayOrder || formData.displayOrder < 1) {
       errors.push("Display order must be at least 1");
     }
 
-    if (formData.codeSnippets && formData.codeSnippets.length > 0) {
-      formData.codeSnippets.forEach((snippet, index) => {
-        if (snippet.code.length > QUESTION_VALIDATION.CODE_SNIPPET_MAX_LENGTH) {
-          errors.push(
-            `Code template ${index + 1} exceeds ${
-              QUESTION_VALIDATION.CODE_SNIPPET_MAX_LENGTH
-            } characters`
-          );
-        }
-      });
+    // User Starter Code validation
+    Object.entries(formData.userStarterCode || {}).forEach(([lang, code]) => {
+      if (code.length > QUESTION_VALIDATION.USER_STARTER_CODE_MAX_LENGTH) {
+        errors.push(
+          `User starter code for ${lang} exceeds ${QUESTION_VALIDATION.USER_STARTER_CODE_MAX_LENGTH} characters`
+        );
+      }
+    });
+
+    // General Template validation
+    Object.entries(formData.generalTemplate || {}).forEach(([lang, code]) => {
+      if (code.length > QUESTION_VALIDATION.GENERAL_TEMPLATE_MAX_LENGTH) {
+        errors.push(
+          `General template for ${lang} exceeds ${QUESTION_VALIDATION.GENERAL_TEMPLATE_MAX_LENGTH} characters`
+        );
+      }
+    });
+
+    // Correct Solution validation
+    Object.entries(formData.correctSolution || {}).forEach(([lang, code]) => {
+      if (code.length > QUESTION_VALIDATION.CORRECT_SOLUTION_MAX_LENGTH) {
+        errors.push(
+          `Correct solution for ${lang} exceeds ${QUESTION_VALIDATION.CORRECT_SOLUTION_MAX_LENGTH} characters`
+        );
+      }
+    });
+
+    // Testcases validation
+    const testcasesSize = JSON.stringify(formData.testcases).length;
+    if (testcasesSize > QUESTION_VALIDATION.TESTCASES_MAX_LENGTH) {
+      errors.push(
+        `Testcases exceed ${QUESTION_VALIDATION.TESTCASES_MAX_LENGTH} characters total`
+      );
     }
 
     return errors;
@@ -222,6 +250,7 @@ export default function CreateQuestionPage() {
     const validationErrors = validateForm();
     if (validationErrors.length > 0) {
       setErrors(validationErrors);
+      toast.error("Please fix the validation errors");
       return;
     }
 
@@ -261,7 +290,8 @@ export default function CreateQuestionPage() {
             Create New Question
           </h1>
           <p className="mt-1 text-sm text-gray-400">
-            Add a new coding question with rich text editor and code templates
+            Add a new coding question with statement, code templates, and
+            testcases
           </p>
         </div>
 
@@ -289,95 +319,87 @@ export default function CreateQuestionPage() {
             </div>
           </div>
 
-          {/* Category, Level, Display Order */}
-          <div className="bg-[#262626] border border-gray-700 rounded-lg p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label
-                  htmlFor="category"
-                  className="block text-sm font-medium text-gray-300 mb-2"
-                >
-                  Category *
-                </label>
-                <select
-                  id="category"
-                  value={formData.categoryId}
-                  onChange={(e) => updateFormData("categoryId", e.target.value)}
-                  className="w-full rounded-md bg-gray-800 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  disabled={categoriesLoading}
-                >
-                  <option value="">Select a category</option>
-                  {categories?.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          {/* Category and Level */}
+          <div className="bg-[#262626] border border-gray-700 rounded-lg p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Category *
+              </label>
+              <select
+                value={formData.categoryId}
+                onChange={(e) => updateFormData("categoryId", e.target.value)}
+                className="w-full rounded-md bg-gray-800 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 cursor-pointer"
+                disabled={categoriesLoading}
+              >
+                <option value="">Select category...</option>
+                {categories?.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-              <div>
-                <label
-                  htmlFor="level"
-                  className="block text-sm font-medium text-gray-300 mb-2"
-                >
-                  Difficulty Level *
-                </label>
-                <select
-                  id="level"
-                  value={formData.level}
-                  onChange={(e) =>
-                    updateFormData("level", e.target.value as QuestionLevel)
-                  }
-                  className="w-full rounded-md bg-gray-800 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                >
-                  {Object.entries(QUESTION_LEVEL_LABELS).map(
-                    ([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    )
-                  )}
-                </select>
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Difficulty Level *
+              </label>
+              <select
+                value={formData.level}
+                onChange={(e) =>
+                  updateFormData("level", e.target.value as QuestionLevel)
+                }
+                className="w-full rounded-md bg-gray-800 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 cursor-pointer"
+              >
+                {Object.entries(QUESTION_LEVEL_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-              <div>
-                <label
-                  htmlFor="displayOrder"
-                  className="block text-sm font-medium text-gray-300 mb-2"
-                >
-                  Display Order *
-                </label>
-                <input
-                  type="number"
-                  id="displayOrder"
-                  value={formData.displayOrder}
-                  onChange={(e) =>
-                    updateFormData(
-                      "displayOrder",
-                      parseInt(e.target.value) || 1
-                    )
-                  }
-                  min="1"
-                  className="w-full rounded-md bg-gray-800 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Display Order *
+              </label>
+              <input
+                type="number"
+                value={formData.displayOrder}
+                onChange={(e) =>
+                  updateFormData("displayOrder", parseInt(e.target.value) || 1)
+                }
+                min={1}
+                className="w-full rounded-md bg-gray-800 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              />
             </div>
           </div>
 
-          {/* Question Statement Editor */}
-          <div className="bg-[#262626] border border-gray-700 rounded-lg p-6">
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Question Statement *
-            </label>
-            <QuestionEditor
-              content={formData.statement}
-              onChange={(content) => {
-                updateFormData("statement", content);
-                setStatementCharCount(content.trim().length);
-              }}
-              onEditorReady={setEditor}
-            />
-          </div>
+          {/* Tabbed Editor */}
+          <QuestionEditorWithTabs
+            statement={formData.statement}
+            onStatementChange={(content) => {
+              updateFormData("statement", content);
+              setStatementCharCount(content.trim().length);
+            }}
+            onEditorReady={setEditor}
+            userStarterCode={formData.userStarterCode || {}}
+            onUserStarterCodeChange={(code) =>
+              updateFormData("userStarterCode", code)
+            }
+            generalTemplate={formData.generalTemplate || {}}
+            onGeneralTemplateChange={(code) =>
+              updateFormData("generalTemplate", code)
+            }
+            correctSolution={formData.correctSolution || {}}
+            onCorrectSolutionChange={(code) =>
+              updateFormData("correctSolution", code)
+            }
+            testcases={formData.testcases || []}
+            onTestcasesChange={(testcases) =>
+              updateFormData("testcases", testcases)
+            }
+          />
 
           {/* Uploaded Images Section */}
           {currentImages.length > 0 && (
@@ -409,7 +431,7 @@ export default function CreateQuestionPage() {
                       type="button"
                       onClick={() => handleDeleteImage(imageUrl)}
                       disabled={isDeletingImage === imageUrl}
-                      className="absolute top-2 right-2 p-1.5 bg-red-600 text-white rounded-full hover:bg-red-700 opacity-0 group-hover:opacity-100 transition-all disabled:opacity-50"
+                      className="absolute top-2 right-2 p-1.5 bg-red-600 text-white rounded-full hover:bg-red-700 opacity-0 group-hover:opacity-100 transition-all disabled:opacity-50 cursor-pointer"
                       title="Delete from Cloudinary"
                     >
                       {isDeletingImage === imageUrl ? (
@@ -436,16 +458,21 @@ export default function CreateQuestionPage() {
             </div>
           )}
 
-          {/* Code Snippets */}
-          <div className="bg-[#262626] border border-gray-700 rounded-lg p-6">
-            <label className="block text-sm font-medium text-gray-300 mb-3">
-              Starter Code Templates (Optional)
-            </label>
-            <CodeSnippetsManager
-              codeSnippets={formData.codeSnippets || []}
-              onChange={(snippets) => updateFormData("codeSnippets", snippets)}
-            />
-          </div>
+          {/* Error Display */}
+          {errors.length > 0 && (
+            <div className="bg-red-900/20 border border-red-700 rounded-lg p-4">
+              <h3 className="text-sm font-medium text-red-300 mb-2">
+                Please fix the following errors:
+              </h3>
+              <ul className="list-disc list-inside space-y-1">
+                {errors.map((error, index) => (
+                  <li key={index} className="text-sm text-red-400">
+                    {error}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </form>
       </div>
 
@@ -456,7 +483,7 @@ export default function CreateQuestionPage() {
             <button
               onClick={handleSubmit}
               disabled={createQuestionMutation.isPending || isOverLimit}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium cursor-pointer"
             >
               {createQuestionMutation.isPending ? (
                 <>
@@ -472,7 +499,7 @@ export default function CreateQuestionPage() {
             </button>
             <button
               onClick={() => router.push(ADMIN_ROUTES.QUESTIONS)}
-              className="w-full px-4 py-2.5 text-sm text-gray-300 bg-gray-800 border border-gray-700 rounded-lg hover:bg-gray-700 transition-colors font-medium"
+              className="w-full px-4 py-2.5 text-sm text-gray-300 bg-gray-800 border border-gray-700 rounded-lg hover:bg-gray-700 transition-colors font-medium cursor-pointer"
             >
               Cancel
             </button>
@@ -565,43 +592,53 @@ export default function CreateQuestionPage() {
             </div>
 
             <div className="p-3 bg-gray-800 rounded-lg border border-gray-700">
-              <h3 className="font-semibold text-white mb-1">
-                📝 Formatting
-              </h3>
+              <h3 className="font-semibold text-white mb-1">📝 Statement</h3>
               <ul className="space-y-1 text-xs text-gray-400">
-                <li>• Use left toolbar for styles</li>
-                <li>• Select custom colors</li>
-                <li>• Bold, italic, inline code</li>
-              </ul>
-            </div>
-
-            <div className="p-3 bg-gray-800 rounded-lg border border-gray-700">
-              <h3 className="font-semibold text-white mb-1">🖼️ Images</h3>
-              <ul className="space-y-1 text-xs text-gray-400">
-                <li>• Max 2MB per image</li>
-                <li>• Max 5 images per question</li>
-                <li>• Delete removes from Cloudinary</li>
+                <li>• Use rich text editor</li>
+                <li>• Max 15k characters</li>
+                <li>• Images auto-uploaded</li>
               </ul>
             </div>
 
             <div className="p-3 bg-gray-800 rounded-lg border border-gray-700">
               <h3 className="font-semibold text-white mb-1">
-                💻 Code Templates
+                🎯 User Starter Code
               </h3>
               <ul className="space-y-1 text-xs text-gray-400">
-                <li>• Max 2k chars per template</li>
-                <li>• Multiple languages supported</li>
-                <li>• Max 10 templates total</li>
+                <li>• Function signature only</li>
+                <li>• 3k chars per language</li>
+                <li>• Multiple languages OK</li>
               </ul>
             </div>
 
             <div className="p-3 bg-gray-800 rounded-lg border border-gray-700">
-              <h3 className="font-semibold text-white mb-1">📊 Limits</h3>
+              <h3 className="font-semibold text-white mb-1">
+                📋 General Template
+              </h3>
               <ul className="space-y-1 text-xs text-gray-400">
-                <li>• Title: Max 200 characters</li>
-                <li>• Statement: Max 15k characters</li>
-                <li>• Images: 5 max, 2MB each</li>
-                <li>• Code: Max 10 templates, 2k each</li>
+                <li>• Imports + structure</li>
+                <li>• 20k chars per language</li>
+                <li>• Full setup code</li>
+              </ul>
+            </div>
+
+            <div className="p-3 bg-gray-800 rounded-lg border border-gray-700">
+              <h3 className="font-semibold text-white mb-1">
+                ✅ Correct Solution
+              </h3>
+              <ul className="space-y-1 text-xs text-gray-400">
+                <li>• Complete solution</li>
+                <li>• 23k chars per language</li>
+                <li>• Working implementation</li>
+              </ul>
+            </div>
+
+            <div className="p-3 bg-gray-800 rounded-lg border border-gray-700">
+              <h3 className="font-semibold text-white mb-1">🧪 Testcases</h3>
+              <ul className="space-y-1 text-xs text-gray-400">
+                <li>• JSON input/output</li>
+                <li>• 30k chars total</li>
+                <li>• Time limits (ms)</li>
               </ul>
             </div>
           </div>
