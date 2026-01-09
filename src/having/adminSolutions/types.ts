@@ -5,7 +5,7 @@ export interface SolutionSummary {
   questionId: string;
   imageCount: number;
   visualizerCount: number;
-  codeLanguage: string | null;
+  codeTemplatesCounts: Record<string, number>;  
   hasYoutubeLink: boolean;
   hasDriveLink: boolean;
   createdByName: string;
