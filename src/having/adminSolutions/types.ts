@@ -5,7 +5,7 @@ export interface SolutionSummary {
   questionId: string;
   imageCount: number;
   visualizerCount: number;
-  codeTemplatesCounts: Record<string, number>;  
+  codeTemplatesCounts: Record<string, number>;
   hasYoutubeLink: boolean;
   hasDriveLink: boolean;
   createdByName: string;
@@ -41,25 +41,19 @@ export interface QuestionsMetadataResponse {
   questions: Record<string, QuestionMetadata>;
 }
 
-export interface CodeSnippet {
-  language: string;
-  code: string;
-  description?: string;
-}
-
 export interface SolutionDetail {
   id: string;
   questionId: string;
   content: string;
   imageUrls?: string[];
   visualizerFileIds?: string[];
-  codeSnippet?: CodeSnippet;
+  codeTemplates?: Record<string, string[]>;
   youtubeLink?: string;
   driveLink?: string;
   createdAt: string;
   updatedAt: string;
   createdByName: string;
-  updatedByName: string;
+  updatedByName?: string;
 }
 
 export interface CreateSolutionRequest {
@@ -69,7 +63,7 @@ export interface CreateSolutionRequest {
   youtubeLink?: string;
   imageUrls?: string[];
   visualizerFileIds?: string[];
-  codeSnippet?: CodeSnippet;
+  codeTemplates?: Record<string, string[]>;
 }
 
 export interface UpdateSolutionRequest {
@@ -79,7 +73,7 @@ export interface UpdateSolutionRequest {
   youtubeLink?: string;
   imageUrls?: string[];
   visualizerFileIds?: string[];
-  codeSnippet?: CodeSnippet;
+  codeTemplates?: Record<string, string[]>;
 }
 
 export interface SolutionWithQuestion extends SolutionSummary {

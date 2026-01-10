@@ -11,4 +11,5 @@ export { SolutionEditor } from './components/SolutionEditor';
 export { SolutionEditorSidebar } from './components/SolutionEditorSidebar';
 export { SolutionContentArea } from './components/SolutionContentArea';
 export { LinksManager } from './components/LinksManager';
-export { CodeSnippetsManager } from './components/CodeSnippetsManager';
+export { CodeTemplatesManager } from './components/CodeTemplatesManager';
+export { MonacoCodeEditor } from './components/MonacoCodeEditor';

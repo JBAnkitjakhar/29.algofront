@@ -44,6 +44,16 @@ function SolutionCard({
   solution: SolutionSummary;
   onClick: () => void;
 }) {
+  // ✅ Calculate total code templates
+  const totalCodeTemplates = solution.codeTemplates
+    ? Object.values(solution.codeTemplates).reduce((sum, arr) => sum + arr.length, 0)
+    : 0;
+
+  // ✅ Get languages that have code templates
+  const languages = solution.codeTemplates 
+    ? Object.keys(solution.codeTemplates) 
+    : [];
+
   return (
     <div
       className="border border-gray-700 bg-[#262626] rounded-lg p-4 hover:border-gray-600 transition-all cursor-pointer"
@@ -65,12 +75,14 @@ function SolutionCard({
       </div>
 
       <div className="flex flex-wrap gap-1.5">
-        {solution.codeSnippet && (
+        {/* ✅ Show code templates by language */}
+        {languages.length > 0 && (
           <span className="inline-flex items-center px-1.5 py-0.5 bg-green-900/30 text-green-400 rounded text-xs">
             <Code className="w-3 h-3 mr-1" />
-            {solution.codeSnippet.language}
+            {languages.length} {languages.length === 1 ? 'Language' : 'Languages'} ({totalCodeTemplates} template{totalCodeTemplates !== 1 ? 's' : ''})
           </span>
         )}
+
         {solution.youtubeLink && (
           <span className="inline-flex items-center px-1.5 py-0.5 bg-red-900/30 text-red-400 rounded text-xs">
             <Play className="w-3 h-3 mr-1" />
@@ -102,7 +114,6 @@ function SolutionCard({
     </div>
   );
 }
-
 type TabType = "description" | "solutions" | "submissions";
 
 function QuestionDetailContent() {

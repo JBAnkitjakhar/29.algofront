@@ -40,13 +40,13 @@ export const ADMIN_SOLUTIONS_QUERY_KEYS = {
 
 export const SOLUTION_VALIDATION = {
   CONTENT_MIN_LENGTH: 20,
-  CONTENT_MAX_LENGTH: 20000, // ✅ 20k characters for solution statement
-  MAX_IMAGES_PER_SOLUTION: 10, // ✅ From backend: app.file.images.max-per-solution=10
-  MAX_IMAGE_SIZE: 2 * 1024 * 1024, // ✅ 2MB from backend
-  MAX_VISUALIZERS_PER_SOLUTION: 2, // ✅ From backend: app.file.html.max-per-solution=2
-  MAX_VISUALIZER_SIZE: 500 * 1024, // ✅ 500KB from backend
-  CODE_MAX_LENGTH: 10000, // ✅ 10k chars per code template
-  MAX_CODE_TEMPLATES: 10, // ✅ Max 10 code templates
+  CONTENT_MAX_LENGTH: 20000,
+  MAX_IMAGES_PER_SOLUTION: 10,
+  MAX_IMAGE_SIZE: 2 * 1024 * 1024,
+  MAX_VISUALIZERS_PER_SOLUTION: 2,
+  MAX_VISUALIZER_SIZE: 500 * 1024,
+  CODE_MAX_LENGTH: 20000, // ✅ 20k chars per code template
+  MAX_CODE_TEMPLATES: 10,
   DESCRIPTION_MAX_LENGTH: 200,
 } as const;
 

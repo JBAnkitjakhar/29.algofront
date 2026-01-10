@@ -16,8 +16,6 @@ import {
 import {
   SolutionEditorSidebar,
   SolutionContentArea,
-  LinksManager,
-  CodeSnippetsManager,
 } from "@/having/adminSolutions/components";
 import {
   useSolutionDetail,
@@ -41,6 +39,7 @@ export default function EditSolutionPage() {
     content: "",
     imageUrls: [],
     visualizerFileIds: [],
+    codeTemplates: {},
   });
   const [errors, setErrors] = useState<string[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -61,7 +60,7 @@ export default function EditSolutionPage() {
           content: solution.content,
           imageUrls: solution.imageUrls || [],
           visualizerFileIds: solution.visualizerFileIds || [],
-          codeSnippet: solution.codeSnippet || undefined,
+          codeTemplates: solution.codeTemplates || {},
           youtubeLink: solution.youtubeLink || undefined,
           driveLink: solution.driveLink || undefined,
         });
@@ -195,13 +194,15 @@ export default function EditSolutionPage() {
       }
     }
 
-    if (formData.codeSnippet) {
-      if (
-        formData.codeSnippet.code.length > SOLUTION_VALIDATION.CODE_MAX_LENGTH
-      ) {
-        errors.push(
-          `Code snippet exceeds maximum ${SOLUTION_VALIDATION.CODE_MAX_LENGTH} characters`
-        );
+    if (formData.codeTemplates && Object.keys(formData.codeTemplates).length > 0) {
+      for (const [lang, codes] of Object.entries(formData.codeTemplates)) {
+        codes.forEach((code, index) => {
+          if (code.length > SOLUTION_VALIDATION.CODE_MAX_LENGTH) {
+            errors.push(
+              `${lang} template ${index + 1} exceeds ${SOLUTION_VALIDATION.CODE_MAX_LENGTH.toLocaleString()} characters`
+            );
+          }
+        });
       }
     }
 
@@ -226,8 +227,8 @@ export default function EditSolutionPage() {
 
     const hasChanges =
       updatedFormData.content !== solution?.content ||
-      JSON.stringify(updatedFormData.codeSnippet) !==
-        JSON.stringify(solution?.codeSnippet) ||
+      JSON.stringify(updatedFormData.codeTemplates) !==
+        JSON.stringify(solution?.codeTemplates) ||
       updatedFormData.youtubeLink !== solution?.youtubeLink ||
       updatedFormData.driveLink !== solution?.driveLink ||
       JSON.stringify(updatedFormData.visualizerFileIds) !==
@@ -349,6 +350,14 @@ export default function EditSolutionPage() {
               solutionId={solutionId}
               visualizerFileIds={formData.visualizerFileIds || []}
               onVisualizerFileIdsChange={handleVisualizerFileIdsChange}
+              codeTemplates={formData.codeTemplates || {}}
+              onCodeTemplatesChange={(templates) =>
+                updateFormData("codeTemplates", templates)
+              }
+              youtubeLink={formData.youtubeLink}
+              onYoutubeLinkChange={handleYoutubeLinkChange}
+              driveLink={formData.driveLink}
+              onDriveLinkChange={handleDriveLinkChange}
             />
           </div>
 
@@ -407,28 +416,6 @@ export default function EditSolutionPage() {
               )}
             </div>
           )}
-
-          <div className="bg-[#262626] border border-gray-700 rounded-lg p-6">
-            <label className="block text-sm font-medium text-gray-300 mb-3">
-              Code Solution (Optional)
-            </label>
-            <CodeSnippetsManager
-              codeSnippet={formData.codeSnippet}
-              onChange={(snippet) => updateFormData("codeSnippet", snippet)}
-            />
-          </div>
-
-          <div className="bg-[#262626] border border-gray-700 rounded-lg p-6">
-            <label className="block text-sm font-medium text-gray-300 mb-3">
-              Additional Resources (Optional)
-            </label>
-            <LinksManager
-              youtubeLink={formData.youtubeLink}
-              onYoutubeLinkChange={handleYoutubeLinkChange}
-              driveLink={formData.driveLink}
-              onDriveLinkChange={handleDriveLinkChange}
-            />
-          </div>
         </form>
       </div>
 
@@ -545,13 +532,11 @@ export default function EditSolutionPage() {
             </div>
 
             <div className="p-3 bg-gray-800 rounded-lg border border-gray-700">
-              <h3 className="font-semibold text-white mb-1">
-                📝 Solution Content
-              </h3>
+              <h3 className="font-semibold text-white mb-1">💻 Code Templates</h3>
               <ul className="space-y-1 text-xs text-gray-400">
-                <li>• Use left toolbar for formatting</li>
-                <li>• Insert images directly in editor</li>
-                <li>• Switch to Visualizers tab to upload</li>
+                <li>• Max 20k chars per template</li>
+                <li>• Max 10 templates total</li>
+                <li>• Multiple templates per language</li>
               </ul>
             </div>
 
@@ -561,27 +546,6 @@ export default function EditSolutionPage() {
                 <li>• Max 2MB per image</li>
                 <li>• Max 10 images per solution</li>
                 <li>• Max 2 HTML visualizers (500KB each)</li>
-              </ul>
-            </div>
-
-            <div className="p-3 bg-gray-800 rounded-lg border border-gray-700">
-              <h3 className="font-semibold text-white mb-1">
-                💻 Code Snippet
-              </h3>
-              <ul className="space-y-1 text-xs text-gray-400">
-                <li>• Max 10k chars per code</li>
-                <li>• Multiple languages supported</li>
-                <li>• Syntax highlighted display</li>
-              </ul>
-            </div>
-
-            <div className="p-3 bg-gray-800 rounded-lg border border-gray-700">
-              <h3 className="font-semibold text-white mb-1">📊 Limits</h3>
-              <ul className="space-y-1 text-xs text-gray-400">
-                <li>• Content: Max 20k characters</li>
-                <li>• Images: 10 max, 2MB each</li>
-                <li>• Visualizers: 2 max, 500KB each</li>
-                <li>• Code: Max 10k characters</li>
               </ul>
             </div>
           </div>

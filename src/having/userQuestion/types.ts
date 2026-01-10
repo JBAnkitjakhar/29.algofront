@@ -28,6 +28,7 @@ export interface UserQuestionProgress {
   solvedAt: string | null;
 }
 
+// ✅ Updated: codeTemplates instead of codeSnippet
 export interface SolutionSummary {
   id: string;
   questionId: string;
@@ -36,7 +37,7 @@ export interface SolutionSummary {
   youtubeLink: string | null;
   imageUrls: string[];
   visualizerFileIds: string[];
-  codeSnippet: CodeSnippet | null;
+  codeTemplates: Record<string, string[]>; // ✅ NEW: Map<Language, List<CodeStrings>>
   createdByName: string;
   createdById: string;
   createdAt: string;

@@ -7,4 +7,5 @@ export { SolutionEditorSidebar } from './SolutionEditorSidebar';
 export { SolutionContentArea } from './SolutionContentArea';
 export { VisualizerManager } from './VisualizerManager';
 export { LinksManager } from './LinksManager';
-export { CodeSnippetsManager } from './CodeSnippetsManager';
+export { CodeTemplatesManager } from './CodeTemplatesManager';
+export { MonacoCodeEditor } from './MonacoCodeEditor';

@@ -16,6 +16,7 @@ import {
   X,
   ZoomIn,
   ZoomOut,
+  ChevronDown,
 } from "lucide-react";
 import { Editor } from "@monaco-editor/react";
 import { TipTapViewer } from "@/having/userQuestion/components/TipTapViewer";
@@ -57,6 +58,27 @@ const getMonacoLanguage = (language: string): string => {
   return languageMap[language.toLowerCase()] || "plaintext";
 };
 
+// Language labels
+const getLanguageLabel = (language: string): string => {
+  const labelMap: Record<string, string> = {
+    javascript: "JavaScript",
+    typescript: "TypeScript",
+    python: "Python",
+    java: "Java",
+    cpp: "C++",
+    c: "C",
+    csharp: "C#",
+    php: "PHP",
+    ruby: "Ruby",
+    go: "Go",
+    rust: "Rust",
+    kotlin: "Kotlin",
+    swift: "Swift",
+  };
+
+  return labelMap[language.toLowerCase()] || language;
+};
+
 type ViewMode = "code" | "explanation" | "visualizer";
 
 export function SolutionViewer({ solution, onBack }: SolutionViewerProps) {
@@ -69,14 +91,43 @@ export function SolutionViewer({ solution, onBack }: SolutionViewerProps) {
   const [fontSize, setFontSize] = useState(14);
   const [showYouTubePlayer, setShowYouTubePlayer] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
+  
+  // ✅ NEW: Code template selection state
+  const [selectedLanguage, setSelectedLanguage] = useState<string>("");
+  const [selectedTemplateIndex, setSelectedTemplateIndex] = useState(0);
+  const [showLanguageSelector, setShowLanguageSelector] = useState(false);
+
   const isResizingRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Get visualizer file IDs from solution
   const visualizerFileIds = solution.visualizerFileIds || [];
-  const hasCodeSnippet =
-    solution.codeSnippet && solution.codeSnippet.code.trim();
+  
+  // ✅ NEW: Check for code templates
+  const codeTemplates = solution.codeTemplates || {};
+  const availableLanguages = Object.keys(codeTemplates);
+  const hasCodeTemplates = availableLanguages.length > 0;
   const hasVisualizers = visualizerFileIds.length > 0;
+
+  // ✅ Initialize selected language
+  useEffect(() => {
+    if (hasCodeTemplates && !selectedLanguage) {
+      setSelectedLanguage(availableLanguages[0]);
+      setSelectedTemplateIndex(0);
+    }
+  }, [hasCodeTemplates, selectedLanguage, availableLanguages]);
+
+  // ✅ Get current code template
+  const getCurrentCodeTemplate = () => {
+    if (!selectedLanguage || !codeTemplates[selectedLanguage]) {
+      return null;
+    }
+    const templates = codeTemplates[selectedLanguage];
+    return templates[selectedTemplateIndex] || null;
+  };
+
+  const currentCode = getCurrentCodeTemplate();
+  const templatesForLanguage = selectedLanguage ? codeTemplates[selectedLanguage] || [] : [];
 
   // Fetch only the currently selected visualizer content
   const selectedFileId = hasVisualizers
@@ -108,7 +159,7 @@ export function SolutionViewer({ solution, onBack }: SolutionViewerProps) {
       if (!containerRef.current) return;
 
       isResizingRef.current = true;
-      setIsResizing(true); // Disable pointer events on panels
+      setIsResizing(true);
       const startX = e.clientX;
       const startWidth = leftPanelWidth;
       const containerWidth = containerRef.current.offsetWidth;
@@ -118,12 +169,10 @@ export function SolutionViewer({ solution, onBack }: SolutionViewerProps) {
 
         moveEvent.preventDefault();
 
-        // Calculate delta from start position
         const deltaX = moveEvent.clientX - startX;
         const deltaPercent = (deltaX / containerWidth) * 100;
         const newWidth = startWidth + deltaPercent;
 
-        // Clamp between 20% and 80%
         const clampedWidth = Math.max(20, Math.min(80, newWidth));
 
         setLeftPanelWidth(clampedWidth);
@@ -131,7 +180,7 @@ export function SolutionViewer({ solution, onBack }: SolutionViewerProps) {
 
       const handleMouseUp = () => {
         isResizingRef.current = false;
-        setIsResizing(false); // Re-enable pointer events on panels
+        setIsResizing(false);
         document.removeEventListener("mousemove", handleMouseMove);
         document.removeEventListener("mouseup", handleMouseUp);
         document.body.style.userSelect = "";
@@ -175,44 +224,139 @@ export function SolutionViewer({ solution, onBack }: SolutionViewerProps) {
     setShowYouTubePlayer(true);
   };
 
+  // ✅ Handle language change
+  const handleLanguageChange = (lang: string) => {
+    setSelectedLanguage(lang);
+    setSelectedTemplateIndex(0); // Reset to first template
+    setShowLanguageSelector(false);
+  };
+
   // Render view content
   const renderViewContent = (view: ViewMode) => {
     switch (view) {
       case "code":
-        if (!hasCodeSnippet) {
+        if (!hasCodeTemplates) {
           return (
             <div className="flex items-center justify-center h-full text-gray-400">
               <div className="text-center">
                 <Code className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>No code available for this solution</p>
+                <p>No code templates available for this solution</p>
               </div>
             </div>
           );
         }
+
+        if (!currentCode) {
+          return (
+            <div className="flex items-center justify-center h-full text-gray-400">
+              <div className="text-center">
+                <Code className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>No code available</p>
+              </div>
+            </div>
+          );
+        }
+
         return (
-          <div className="h-full">
-            <Editor
-              height="100%"
-              language={getMonacoLanguage(solution.codeSnippet!.language)}
-              value={solution.codeSnippet!.code}
-              theme={editorTheme}
-              options={{
-                readOnly: true,
-                fontSize: fontSize,
-                minimap: { enabled: false },
-                scrollBeyondLastLine: false,
-                automaticLayout: true,
-                wordWrap: "on",
-                lineNumbers: "on",
-              }}
-            />
+          <div className="h-full flex flex-col">
+            {/* Language & Template Selector */}
+            <div className="border-b border-gray-700 px-4 py-2 bg-[#262626] flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {/* Language Selector */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowLanguageSelector(!showLanguageSelector)}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-gray-700 border border-gray-600 rounded text-sm text-gray-300 hover:bg-gray-600 transition-colors"
+                  >
+                    <Code className="w-4 h-4" />
+                    <span>{getLanguageLabel(selectedLanguage)}</span>
+                    <ChevronDown className="w-3 h-3" />
+                  </button>
+
+                  {showLanguageSelector && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setShowLanguageSelector(false)}
+                      />
+                      <div className="absolute top-full left-0 mt-1 bg-[#262626] border border-gray-700 rounded-lg shadow-lg z-50 min-w-[150px] max-h-60 overflow-y-auto">
+                        {availableLanguages.map((lang) => (
+                          <button
+                            key={lang}
+                            onClick={() => handleLanguageChange(lang)}
+                            className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg ${
+                              selectedLanguage === lang
+                                ? "bg-blue-900/20 text-blue-400"
+                                : "text-gray-300"
+                            }`}
+                          >
+                            {getLanguageLabel(lang)} ({codeTemplates[lang].length})
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Template Navigation - Only show if multiple templates */}
+                {templatesForLanguage.length > 1 && (
+                  <div className="flex items-center gap-2 border-l border-gray-700 pl-2">
+                    <button
+                      onClick={() =>
+                        setSelectedTemplateIndex(Math.max(0, selectedTemplateIndex - 1))
+                      }
+                      disabled={selectedTemplateIndex === 0}
+                      className="px-2 py-1 text-xs bg-gray-700 border border-gray-600 rounded text-gray-300 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Prev
+                    </button>
+                    <span className="text-xs text-gray-400">
+                      Template {selectedTemplateIndex + 1} / {templatesForLanguage.length}
+                    </span>
+                    <button
+                      onClick={() =>
+                        setSelectedTemplateIndex(
+                          Math.min(templatesForLanguage.length - 1, selectedTemplateIndex + 1)
+                        )
+                      }
+                      disabled={selectedTemplateIndex === templatesForLanguage.length - 1}
+                      className="px-2 py-1 text-xs bg-gray-700 border border-gray-600 rounded text-gray-300 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="text-xs text-gray-500">
+                {availableLanguages.length} language{availableLanguages.length !== 1 ? 's' : ''}
+              </div>
+            </div>
+
+            {/* Code Editor */}
+            <div className="flex-1">
+              <Editor
+                height="100%"
+                language={getMonacoLanguage(selectedLanguage)}
+                value={currentCode}
+                theme={editorTheme}
+                options={{
+                  readOnly: true,
+                  fontSize: fontSize,
+                  minimap: { enabled: false },
+                  scrollBeyondLastLine: false,
+                  automaticLayout: true,
+                  wordWrap: "on",
+                  lineNumbers: "on",
+                }}
+              />
+            </div>
           </div>
         );
 
       case "explanation":
         return (
           <div className="h-full overflow-auto custom-scrollbar">
-            {/* Show YouTube and Drive links at top if available */}
             {(solution.youtubeLink || solution.driveLink) && (
               <div className="px-6 pt-4 pb-3 border-b border-gray-700 bg-[#262626]">
                 <div className="flex items-center space-x-3">
@@ -267,7 +411,6 @@ export function SolutionViewer({ solution, onBack }: SolutionViewerProps) {
 
         return (
           <div className="h-full flex flex-col">
-            {/* Visualizer Selector - Only show if multiple visualizers */}
             {visualizerFileIds.length > 1 && (
               <div className="border-b border-gray-700 px-4 py-2 bg-[#262626]">
                 <div className="flex items-center justify-between">
@@ -305,7 +448,6 @@ export function SolutionViewer({ solution, onBack }: SolutionViewerProps) {
               </div>
             )}
 
-            {/* Visualizer Content */}
             <div className="flex-1 relative">
               {isLoadingContent ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-[#1A1A1A]">
@@ -355,15 +497,20 @@ export function SolutionViewer({ solution, onBack }: SolutionViewerProps) {
       <span className="text-xs text-gray-400 mr-1">{label}:</span>
       <button
         onClick={() => onChange("code")}
-        disabled={!hasCodeSnippet}
+        disabled={!hasCodeTemplates}
         className={`flex items-center space-x-1 px-2 py-1 rounded text-xs transition-colors ${
           currentView === "code"
             ? "bg-blue-600 text-white"
             : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-        } ${!hasCodeSnippet ? "opacity-50 cursor-not-allowed" : ""}`}
+        } ${!hasCodeTemplates ? "opacity-50 cursor-not-allowed" : ""}`}
       >
         <Code className="w-3 h-3" />
         <span>Code</span>
+        {hasCodeTemplates && (
+          <span className="ml-1 px-1.5 py-0.5 bg-blue-900 text-blue-300 rounded-full text-xs font-medium">
+            {availableLanguages.length}
+          </span>
+        )}
       </button>
       <button
         onClick={() => onChange("explanation")}
@@ -400,7 +547,6 @@ export function SolutionViewer({ solution, onBack }: SolutionViewerProps) {
   if (showYouTubePlayer && solution.youtubeEmbedUrl) {
     return (
       <div className="h-full flex flex-col bg-[#1A1A1A]">
-        {/* YouTube Player Header */}
         <div className="border-b border-gray-700 px-4 py-3 bg-[#262626]">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -426,7 +572,6 @@ export function SolutionViewer({ solution, onBack }: SolutionViewerProps) {
           </div>
         </div>
 
-        {/* YouTube Player */}
         <div className="flex-1 flex items-center justify-center p-8 bg-[#1A1A1A]">
           <div className="w-full max-w-6xl">
             <div className="aspect-video rounded-lg overflow-hidden border border-gray-700 shadow-2xl">
@@ -447,7 +592,6 @@ export function SolutionViewer({ solution, onBack }: SolutionViewerProps) {
   // Normal split-view layout
   return (
     <div className="h-full flex flex-col bg-[#1A1A1A]">
-      {/* View Controls with Font Controls, Theme, and Back Button */}
       <div className="border-b border-gray-700 px-4 py-2 bg-[#262626]">
         <div className="flex items-center justify-between">
           <ViewSelector
@@ -456,9 +600,7 @@ export function SolutionViewer({ solution, onBack }: SolutionViewerProps) {
             label="Left"
           />
 
-          {/* Center Controls - Font Size and Theme */}
           <div className="flex items-center space-x-3">
-            {/* Font Size Controls */}
             <div className="flex items-center space-x-1 border-l border-r border-gray-700 px-3">
               <button
                 onClick={decreaseFontSize}
@@ -479,7 +621,6 @@ export function SolutionViewer({ solution, onBack }: SolutionViewerProps) {
               </button>
             </div>
 
-            {/* Theme Selector */}
             <div className="relative">
               <button
                 onClick={() => setShowThemeSelector(!showThemeSelector)}
@@ -517,7 +658,6 @@ export function SolutionViewer({ solution, onBack }: SolutionViewerProps) {
               )}
             </div>
 
-            {/* Back Button */}
             <button
               onClick={onBack}
               className="flex items-center space-x-2 px-3 py-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors text-sm"
@@ -535,9 +675,7 @@ export function SolutionViewer({ solution, onBack }: SolutionViewerProps) {
         </div>
       </div>
 
-      {/* Split Panel Content */}
       <div className="flex-1 flex min-h-0" ref={containerRef}>
-        {/* Left Panel */}
         <div
           className="bg-[#262626] border-r border-gray-700"
           style={{ 
@@ -548,7 +686,6 @@ export function SolutionViewer({ solution, onBack }: SolutionViewerProps) {
           {renderViewContent(leftView)}
         </div>
 
-        {/* Resizer */}
         <div
           className="w-1 bg-gray-700 cursor-col-resize hover:bg-blue-500 transition-colors relative group"
           onMouseDown={handlePanelMouseDown}
@@ -556,7 +693,6 @@ export function SolutionViewer({ solution, onBack }: SolutionViewerProps) {
           <div className="absolute inset-y-0 -left-1 -right-1 group-hover:bg-blue-500/20"></div>
         </div>
 
-        {/* Right Panel */}
         <div
           className="bg-[#262626]"
           style={{ 
@@ -568,7 +704,6 @@ export function SolutionViewer({ solution, onBack }: SolutionViewerProps) {
         </div>
       </div>
 
-      {/* Custom Scrollbar Styles */}
       <style jsx global>{`
         .custom-scrollbar {
           overflow-y: overlay;
@@ -596,7 +731,6 @@ export function SolutionViewer({ solution, onBack }: SolutionViewerProps) {
           background-clip: padding-box;
         }
 
-        /* Firefox */
         .custom-scrollbar {
           scrollbar-width: thin;
           scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
