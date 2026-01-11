@@ -1,9 +1,16 @@
-// src/having/userQuestion/components/UserApproaches.tsx
+// src/having/userQuestion/components/UserApproaches.tsx - UPDATED
 
 "use client";
 
 import { useState, useEffect } from "react";
-import { Trash2, Code } from "lucide-react";
+import { 
+  Trash2, 
+  Code, 
+  CheckCircle, 
+  XCircle, 
+  Clock,
+  TrendingUp 
+} from "lucide-react";
 import {
   useApproachesByQuestion,
   useDeleteApproach,
@@ -11,6 +18,7 @@ import {
 } from "@/having/userQuestion/hooks";
 import { dateUtils } from "@/lib/utils/common";
 import type { ApproachDetail } from "@/having/userQuestion/types";
+import { ComplexityAnalysisModal } from "./ComplexityAnalysisModal";
 
 interface UserApproachesProps {
   questionId: string;
@@ -23,17 +31,17 @@ export function UserApproaches({
 }: UserApproachesProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [loadingApproachId, setLoadingApproachId] = useState<string | null>(null);
+  const [showComplexityModal, setShowComplexityModal] = useState(false);
+  const [selectedApproachForComplexity, setSelectedApproachForComplexity] = useState<string | null>(null);
 
   const { data: approaches, isLoading } = useApproachesByQuestion(questionId);
   const deleteMutation = useDeleteApproach();
 
-  // Fetch full approach when needed for editing
   const { data: approachDetail } = useApproachDetail(
     questionId,
     loadingApproachId || ""
   );
 
-  // Auto-navigate when approach detail is loaded (moved to useEffect)
   useEffect(() => {
     if (approachDetail && loadingApproachId === approachDetail.id) {
       onEditApproach?.(approachDetail);
@@ -42,7 +50,7 @@ export function UserApproaches({
   }, [approachDetail, loadingApproachId, onEditApproach]);
 
   const handleDelete = (e: React.MouseEvent, approachId: string) => {
-    e.stopPropagation(); // Prevent card click
+    e.stopPropagation();
     if (!confirm("Are you sure you want to delete this approach?")) return;
 
     setDeletingId(approachId);
@@ -56,6 +64,38 @@ export function UserApproaches({
 
   const handleCardClick = (approachId: string) => {
     setLoadingApproachId(approachId);
+  };
+
+  const handleAnalyzeComplexity = (e: React.MouseEvent, approachId: string) => {
+    e.stopPropagation();
+    setSelectedApproachForComplexity(approachId);
+    setShowComplexityModal(true);
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "ACCEPTED":
+        return <CheckCircle className="w-4 h-4 text-green-400" />;
+      case "WRONG_ANSWER":
+        return <XCircle className="w-4 h-4 text-red-400" />;
+      case "TLE":
+        return <Clock className="w-4 h-4 text-yellow-400" />;
+      default:
+        return null;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "ACCEPTED":
+        return "bg-green-900/30 text-green-400";
+      case "WRONG_ANSWER":
+        return "bg-red-900/30 text-red-400";
+      case "TLE":
+        return "bg-yellow-900/30 text-yellow-400";
+      default:
+        return "bg-gray-700 text-gray-300";
+    }
   };
 
   if (isLoading) {
@@ -103,13 +143,14 @@ export function UserApproaches({
           className="border border-gray-700 rounded-lg overflow-hidden bg-[#262626] hover:border-gray-600 transition-all cursor-pointer group"
         >
           <div className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center space-x-3">
-                <span className="px-2.5 py-1 bg-blue-900/30 text-blue-400 rounded text-sm font-medium group-hover:bg-blue-900/40 transition-colors">
-                  {approach.codeLanguage}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-2">
+                {getStatusIcon(approach.status)}
+                <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(approach.status)}`}>
+                  {approach.status.replace("_", " ")}
                 </span>
-                <span className="text-sm text-gray-400">
-                  {approach.contentSizeKB} KB
+                <span className="px-2 py-1 bg-blue-900/30 text-blue-400 rounded text-xs font-medium">
+                  {approach.codeLanguage}
                 </span>
               </div>
 
@@ -127,12 +168,90 @@ export function UserApproaches({
               </button>
             </div>
 
-            <p className="text-xs text-gray-500">
-              Last updated {dateUtils.formatRelativeTime(approach.updatedAt)}
-            </p>
+            {/* ACCEPTED: Show runtime and memory */}
+            {approach.status === "ACCEPTED" && (
+              <div className="flex items-center space-x-4 mb-2 text-sm">
+                <span className="text-gray-400">
+                  Runtime: <span className="text-green-400">{approach.runtime} ms</span>
+                </span>
+                <span className="text-gray-400">
+                  Memory: <span className="text-green-400">{(approach.memory! / 1024).toFixed(2)} MB</span>
+                </span>
+              </div>
+            )}
+
+            {/* WRONG_ANSWER: Show failed testcase info */}
+            {approach.status === "WRONG_ANSWER" && approach.wrongTestcase && (
+              <div className="mb-2 p-2 bg-red-900/10 border border-red-900/30 rounded text-xs">
+                <div className="text-red-400 font-medium mb-1">Failed Test Case:</div>
+                <div className="text-gray-400">
+                  <div>Input: {approach.wrongTestcase.input}</div>
+                  <div>Expected: {approach.wrongTestcase.expectedOutput}</div>
+                  <div>Got: {approach.wrongTestcase.userOutput}</div>
+                </div>
+              </div>
+            )}
+
+            {/* TLE: Show TLE testcase info */}
+            {approach.status === "TLE" && approach.tleTestcase && (
+              <div className="mb-2 p-2 bg-yellow-900/10 border border-yellow-900/30 rounded text-xs">
+                <div className="text-yellow-400 font-medium mb-1">Time Limit Exceeded:</div>
+                <div className="text-gray-400">
+                  <div>Input: {approach.tleTestcase.input}</div>
+                </div>
+              </div>
+            )}
+
+            {/* Complexity Analysis (only for ACCEPTED) */}
+            {approach.status === "ACCEPTED" && (
+              <div className="mt-3 pt-3 border-t border-gray-700">
+                {approach.complexityAnalysis ? (
+                  <div className="flex items-center space-x-4 text-sm">
+                    <span className="text-gray-400">
+                      Time: <span className="text-purple-400">{approach.complexityAnalysis.timeComplexity}</span>
+                    </span>
+                    <span className="text-gray-400">
+                      Space: <span className="text-purple-400">{approach.complexityAnalysis.spaceComplexity}</span>
+                    </span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={(e) => handleAnalyzeComplexity(e, approach.id)}
+                    className="flex items-center space-x-2 px-3 py-1.5 bg-purple-900/30 text-purple-400 hover:bg-purple-900/40 rounded text-xs transition-colors"
+                  >
+                    <TrendingUp className="w-3 h-3" />
+                    <span>Analyze Complexity</span>
+                  </button>
+                )}
+              </div>
+            )}
+
+            <div className="flex items-center justify-between mt-3">
+              <p className="text-xs text-gray-500">
+                {dateUtils.formatRelativeTime(approach.updatedAt)}
+              </p>
+              <span className="text-xs text-gray-500">
+                {approach.contentSizeKB} KB
+              </span>
+            </div>
           </div>
         </div>
       ))}
+
+      {/* Complexity Analysis Modal */}
+      {showComplexityModal && selectedApproachForComplexity && (
+        <ComplexityAnalysisModal
+          questionId={questionId}
+          approachId={selectedApproachForComplexity}
+          onClose={() => {
+            setShowComplexityModal(false);
+            setSelectedApproachForComplexity(null);
+          }}
+          onSuccess={() => {
+            // Modal will close itself and invalidate queries
+          }}
+        />
+      )}
     </div>
   );
 }

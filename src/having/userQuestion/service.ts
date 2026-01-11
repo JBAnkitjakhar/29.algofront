@@ -1,4 +1,4 @@
-// src/having/userQuestion/service.ts
+// src/having/userQuestion/service.ts - COMPLETE FILE
 
 import { apiClient } from "@/lib/api/client";
 import type { ApiResponse } from "@/types";
@@ -10,6 +10,7 @@ import type {
   ApproachDetail,
   CreateApproachRequest,
   UpdateApproachRequest,
+  AnalyzeComplexityRequest,
 } from "./types";
 
 class UserQuestionService {
@@ -62,18 +63,10 @@ class UserQuestionService {
     questionId: string,
     data: CreateApproachRequest
   ): Promise<ApiResponse<ApproachDetail>> {
-    // console.log("📡 Creating approach:", {
-    //   questionId,
-    //   data,
-    //   url: `/approaches/question/${questionId}`,
-    // });
-
     const response = await apiClient.post<ApproachDetail>(
       `/approaches/question/${questionId}`,
       data
     );
-
-    // console.log("📡 Create approach response:", response);
     return response;
   }
 
@@ -97,7 +90,17 @@ class UserQuestionService {
     );
   }
 
-  // ✅ Only content URL - no metadata
+  async analyzeComplexity(
+    questionId: string,
+    approachId: string,
+    data: AnalyzeComplexityRequest
+  ): Promise<ApiResponse<ApproachDetail>> {
+    return apiClient.put<ApproachDetail>(
+      `/approaches/question/${questionId}/${approachId}/analyze-complexity`,
+      data
+    );
+  }
+
   getVisualizerContentUrl(fileId: string): string {
     return `${
       process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080/api"

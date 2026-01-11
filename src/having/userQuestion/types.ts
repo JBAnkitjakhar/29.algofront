@@ -1,4 +1,4 @@
-// src/having/userQuestion/types.ts
+// src/having/userQuestion/types.ts - COMPLETE FILE
 
 export interface QuestionDetail {
   id: string;
@@ -8,6 +8,7 @@ export interface QuestionDetail {
   imageUrls: string[];
   imageFolderUrl: string | null;
   codeSnippets: CodeSnippet[];
+  testCases: TestCase[];
   categoryId: string;
   level: 'EASY' | 'MEDIUM' | 'HARD';
   displayOrder: number;
@@ -23,12 +24,18 @@ export interface CodeSnippet {
   description?: string;
 }
 
+export interface TestCase {
+  id: number;
+  input: Record<string, unknown>;
+  expectedOutput: unknown;
+  expectedTimeLimit: number;
+}
+
 export interface UserQuestionProgress {
   solved: boolean;
   solvedAt: string | null;
 }
 
-// ✅ Updated: codeTemplates instead of codeSnippet
 export interface SolutionSummary {
   id: string;
   questionId: string;
@@ -37,7 +44,7 @@ export interface SolutionSummary {
   youtubeLink: string | null;
   imageUrls: string[];
   visualizerFileIds: string[];
-  codeTemplates: Record<string, string[]>; // ✅ NEW: Map<Language, List<CodeStrings>>
+  codeTemplates: Record<string, string[]>;
   createdByName: string;
   createdById: string;
   createdAt: string;
@@ -46,12 +53,31 @@ export interface SolutionSummary {
   youtubeEmbedUrl: string | null;
 }
 
+export type ApproachStatus = 'ACCEPTED' | 'WRONG_ANSWER' | 'TLE';
+
+export interface ComplexityAnalysis {
+  timeComplexity: string;
+  spaceComplexity: string;
+}
+
+export interface TestCaseFailure {
+  input: string;
+  userOutput: string;
+  expectedOutput: string;
+}
+
 export interface ApproachMetadata {
   id: string;
   questionId: string;
   userId: string;
   userName: string;
   codeLanguage: string;
+  status: ApproachStatus;
+  runtime: number | null;
+  memory: number | null;
+  complexityAnalysis: ComplexityAnalysis | null;
+  wrongTestcase: TestCaseFailure | null;
+  tleTestcase: TestCaseFailure | null;
   contentSize: number;
   contentSizeKB: number;
   createdAt: string;
@@ -67,6 +93,12 @@ export interface CreateApproachRequest {
   textContent: string;
   codeContent: string;
   codeLanguage: string;
+  status?: ApproachStatus;
+  runtime?: number;
+  memory?: number;
+  complexityAnalysis?: ComplexityAnalysis;
+  wrongTestcase?: TestCaseFailure;
+  tleTestcase?: TestCaseFailure;
 }
 
 export interface UpdateApproachRequest {
@@ -75,9 +107,37 @@ export interface UpdateApproachRequest {
   codeLanguage: string;
 }
 
+export interface AnalyzeComplexityRequest {
+  timeComplexity: string;
+  spaceComplexity: string;
+}
+
 export interface QuestionPageData {
   question: QuestionDetail | null;
   progress: UserQuestionProgress | null;
   solutions: SolutionSummary[];
   approaches: ApproachMetadata[];
+}
+
+// ✅ Backend response structure (what the API returns)
+export interface BackendTestCaseResult {
+  index: number;
+  output: string;
+  timeMs: number;
+  status: 'success' | 'error' | 'timeout';
+}
+
+export interface ExecutionMetrics {
+  maxTimeMs: number;
+  totalMemoryMb: number;
+  totalTestCases: number;
+  executedTestCases: number;
+}
+
+export interface ExecutionResponse {
+  success: boolean;
+  testCaseResults: BackendTestCaseResult[];
+  metrics: ExecutionMetrics;
+  message: string;
+  error?: string;
 }
