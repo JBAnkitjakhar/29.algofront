@@ -3,7 +3,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Plus, X, CheckCircle, XCircle, Clock } from "lucide-react";
+import { Plus, X, CheckCircle, XCircle, Clock } from "lucide-react";
 import type { TestCase } from "@/having/userQuestion/types";
 
 interface TestCaseResult {
@@ -18,7 +18,7 @@ interface TestCaseManagerProps {
   selectedTestCases: TestCase[];
   onTestCaseSelectionChange: (testCases: TestCase[]) => void;
   results?: TestCaseResult[];
-  mode: "edit" | "results";
+  mode?: "edit" | "results";
 }
 
 export function TestCaseManager({
@@ -26,275 +26,257 @@ export function TestCaseManager({
   selectedTestCases,
   onTestCaseSelectionChange,
   results,
-  mode,
+  mode = "edit",
 }: TestCaseManagerProps) {
-  const [expandedTestCases, setExpandedTestCases] = useState<Set<number>>(
-    new Set([0])
-  );
+  const [activeTab, setActiveTab] = useState(0);
 
-  const toggleExpanded = (id: number) => {
-    setExpandedTestCases((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
+  const formatValue = (value: unknown): string => {
+    if (Array.isArray(value)) {
+      return JSON.stringify(value);
+    }
+    return String(value);
   };
 
   const addTestCase = () => {
     if (selectedTestCases.length >= 5) return;
 
-    const nextTestCase = allTestCases.find(
-      (tc) => !selectedTestCases.some((selected) => selected.id === tc.id)
-    );
+    const selectedIds = new Set(selectedTestCases.map(tc => tc.id));
+    const nextTestCase = allTestCases.find(tc => !selectedIds.has(tc.id));
 
     if (nextTestCase) {
       onTestCaseSelectionChange([...selectedTestCases, nextTestCase]);
-      setExpandedTestCases((prev) => new Set(prev).add(nextTestCase.id));
+      setActiveTab(selectedTestCases.length);
     }
   };
 
-  const removeTestCase = (testCaseId: number) => {
+  const removeTestCase = (index: number) => {
     if (selectedTestCases.length <= 1) return;
-    onTestCaseSelectionChange(
-      selectedTestCases.filter((tc) => tc.id !== testCaseId)
-    );
-    setExpandedTestCases((prev) => {
-      const next = new Set(prev);
-      next.delete(testCaseId);
-      return next;
-    });
-  };
 
-  const getResultForTestCase = (testCaseId: number): TestCaseResult | undefined => {
-    return results?.find((r) => r.testCase.id === testCaseId);
-  };
+    const newTestCases = selectedTestCases.filter((_, i) => i !== index);
+    onTestCaseSelectionChange(newTestCases);
 
-  const getStatusIcon = (status: "passed" | "failed" | "tle") => {
-    switch (status) {
-      case "passed":
-        return <CheckCircle className="w-4 h-4 text-green-400" />;
-      case "failed":
-        return <XCircle className="w-4 h-4 text-red-400" />;
-      case "tle":
-        return <Clock className="w-4 h-4 text-yellow-400" />;
+    if (activeTab >= newTestCases.length) {
+      setActiveTab(newTestCases.length - 1);
+    } else if (activeTab > index) {
+      setActiveTab(activeTab - 1);
     }
   };
 
-  const getStatusColor = (status: "passed" | "failed" | "tle") => {
-    switch (status) {
-      case "passed":
-        return "border-green-500 bg-green-900/10";
-      case "failed":
-        return "border-red-500 bg-red-900/10";
-      case "tle":
-        return "border-yellow-500 bg-yellow-900/10";
-    }
-  };
-
-  const formatInputDisplay = (input: Record<string, unknown>): string => {
-    return Object.entries(input)
-      .map(([key, value]) => {
-        if (Array.isArray(value)) {
-          return `${key} = [${value.join(", ")}]`;
-        }
-        return `${key} = ${JSON.stringify(value)}`;
-      })
-      .join("\n");
-  };
-
-  const formatOutputDisplay = (output: unknown): string => {
-    if (Array.isArray(output)) {
-      return JSON.stringify(output);
-    }
-    return String(output);
+  const getResultForTestCase = (index: number): TestCaseResult | undefined => {
+    return results?.[index];
   };
 
   const canAddMore = selectedTestCases.length < 5 && selectedTestCases.length < allTestCases.length;
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-medium text-gray-300">
-          Test Cases ({selectedTestCases.length}/{allTestCases.length})
-        </h3>
-        {mode === "edit" && canAddMore && (
-          <button
-            onClick={addTestCase}
-            className="flex items-center space-x-1 px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
-          >
-            <Plus className="w-3 h-3" />
-            <span>Add Case</span>
-          </button>
-        )}
-      </div>
-
-      <div className="space-y-2">
-        {selectedTestCases.map((testCase, index) => {
-          const result = getResultForTestCase(testCase.id);
-          const isExpanded = expandedTestCases.has(testCase.id);
-
-          return (
-            <div
-              key={testCase.id}
-              className={`border rounded-lg overflow-hidden ${
-                result ? getStatusColor(result.status) : "border-gray-700 bg-[#262626]"
-              }`}
-            >
-              {/* Header */}
-              <div
-                className="flex items-center justify-between p-3 cursor-pointer hover:bg-gray-700/30"
-                onClick={() => toggleExpanded(testCase.id)}
-              >
-                <div className="flex items-center space-x-2">
-                  {isExpanded ? (
-                    <ChevronDown className="w-4 h-4 text-gray-400" />
-                  ) : (
-                    <ChevronRight className="w-4 h-4 text-gray-400" />
-                  )}
-                  <span className="text-sm font-medium text-white">
-                    Case {index + 1}
-                  </span>
-                  {result && (
-                    <div className="flex items-center space-x-1">
-                      {getStatusIcon(result.status)}
-                      <span
-                        className={`text-xs ${
-                          result.status === "passed"
-                            ? "text-green-400"
-                            : result.status === "tle"
-                            ? "text-yellow-400"
-                            : "text-red-400"
-                        }`}
-                      >
-                        {result.actualTime}ms
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {mode === "edit" && selectedTestCases.length > 1 && (
+    <>
+      <div className="h-full flex flex-col bg-[#262626]">
+        {/* Header with Tabs */}
+        <div className="flex items-center border-b border-gray-700 bg-[#1A1A1A]">
+          <span className="px-4 py-2 text-sm font-medium text-gray-400">
+            Test Case
+          </span>
+          <div className="flex items-center space-x-1 px-2">
+            {selectedTestCases.map((testCase, index) => {
+              const result = getResultForTestCase(index);
+              
+              return (
+                <div key={testCase.id} className="flex items-center group">
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeTestCase(testCase.id);
-                    }}
-                    className="p-1 hover:bg-gray-600 rounded transition-colors"
+                    onClick={() => setActiveTab(index)}
+                    className={`flex items-center space-x-1.5 px-3 py-2 text-sm font-medium transition-colors ${
+                      activeTab === index
+                        ? "text-white border-b-2 border-blue-500"
+                        : "text-gray-400 hover:text-gray-300"
+                    }`}
                   >
-                    <X className="w-4 h-4 text-gray-400" />
+                    <span>Case {index + 1}</span>
+                    {result && (
+                      <span>
+                        {result.status === "passed" ? (
+                          <CheckCircle className="w-3.5 h-3.5 text-green-400" />
+                        ) : result.status === "tle" ? (
+                          <Clock className="w-3.5 h-3.5 text-yellow-400" />
+                        ) : (
+                          <XCircle className="w-3.5 h-3.5 text-red-400" />
+                        )}
+                      </span>
+                    )}
                   </button>
-                )}
-              </div>
-
-              {/* Content */}
-              {isExpanded && (
-                <div className="p-3 pt-0 space-y-2 border-t border-gray-700">
-                  {/* Input */}
-                  <div>
-                    <div className="text-xs font-medium text-gray-400 mb-1">
-                      Input:
-                    </div>
-                    <pre className="text-xs text-gray-300 bg-[#1A1A1A] p-2 rounded overflow-x-auto font-mono">
-                      {formatInputDisplay(testCase.input)}
-                    </pre>
-                  </div>
-
-                  {/* Expected Output */}
-                  <div>
-                    <div className="text-xs font-medium text-gray-400 mb-1">
-                      Expected Output:
-                    </div>
-                    <pre className="text-xs text-gray-300 bg-[#1A1A1A] p-2 rounded overflow-x-auto font-mono">
-                      {formatOutputDisplay(testCase.expectedOutput)}
-                    </pre>
-                  </div>
-
-                  {/* Result Info (only in results mode) */}
-                  {result && (
-                    <>
-                      {/* User Output */}
-                      <div>
-                        <div className="text-xs font-medium text-gray-400 mb-1">
-                          Your Output:
-                        </div>
-                        <pre
-                          className={`text-xs p-2 rounded overflow-x-auto font-mono ${
-                            result.status === "passed"
-                              ? "text-green-400 bg-green-900/20"
-                              : "text-red-400 bg-red-900/20"
-                          }`}
-                        >
-                          {result.userOutput}
-                        </pre>
-                      </div>
-
-                      {/* Timing Info */}
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-gray-400">
-                          Expected Time: {testCase.expectedTimeLimit}ms
-                        </span>
-                        <span
-                          className={`font-medium ${
-                            result.status === "tle"
-                              ? "text-yellow-400"
-                              : result.actualTime <= testCase.expectedTimeLimit
-                              ? "text-green-400"
-                              : "text-yellow-400"
-                          }`}
-                        >
-                          Actual: {result.actualTime}ms
-                        </span>
-                      </div>
-
-                      {/* Status Message */}
-                      {result.status === "tle" && (
-                        <div className="text-xs text-yellow-400 bg-yellow-900/20 p-2 rounded">
-                          ⚠️ Time Limit Exceeded
-                        </div>
-                      )}
-                      {result.status === "failed" && (
-                        <div className="text-xs text-red-400 bg-red-900/20 p-2 rounded">
-                          ❌ Output mismatch
-                        </div>
-                      )}
-                    </>
-                  )}
-
-                  {/* Expected Time Limit (edit mode only) */}
-                  {mode === "edit" && !result && (
-                    <div className="text-xs text-gray-500">
-                      Time Limit: {testCase.expectedTimeLimit}ms
-                    </div>
+                  {mode === "edit" && selectedTestCases.length > 1 && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeTestCase(index);
+                      }}
+                      className="ml-1 p-0.5 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Remove test case"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
                   )}
                 </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Summary (results mode) */}
-      {mode === "results" && results && results.length > 0 && (
-        <div className="mt-4 p-3 bg-[#262626] border border-gray-700 rounded-lg">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-400">Results:</span>
-            <div className="flex items-center space-x-4">
-              <span className="text-green-400">
-                {results.filter((r) => r.status === "passed").length} Passed
-              </span>
-              <span className="text-red-400">
-                {results.filter((r) => r.status === "failed").length} Failed
-              </span>
-              <span className="text-yellow-400">
-                {results.filter((r) => r.status === "tle").length} TLE
-              </span>
-            </div>
+              );
+            })}
+            {mode === "edit" && canAddMore && (
+              <button
+                onClick={addTestCase}
+                className="p-2 text-gray-400 hover:text-white transition-colors"
+                title="Add test case"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
-      )}
-    </div>
+
+        {/* Content Area */}
+        <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+          {selectedTestCases.length === 0 ? (
+            <div className="text-center text-gray-500 py-8">
+              No test cases available
+            </div>
+          ) : (
+            selectedTestCases[activeTab] && (
+              <div className="space-y-3">
+                {/* Input Section */}
+                <div>
+                  <div className="text-xs font-medium text-gray-400 mb-2">Input:</div>
+                  {Object.entries(selectedTestCases[activeTab].input).map(
+                    ([key, value]) => (
+                      <div key={key} className="mb-2">
+                        <div className="text-xs text-gray-500 mb-1">{key} =</div>
+                        <div className="bg-[#1A1A1A] border border-gray-700 rounded px-3 py-2 text-sm text-gray-300 font-mono">
+                          {formatValue(value)}
+                        </div>
+                      </div>
+                    )
+                  )}
+                </div>
+
+                {/* Results Mode - Show detailed comparison */}
+                {mode === "results" && getResultForTestCase(activeTab) ? (
+                  <>
+                    {(() => {
+                      const result = getResultForTestCase(activeTab)!;
+                      return (
+                        <>
+                          {/* Your Output */}
+                          <div>
+                            <div className="text-xs font-medium text-gray-400 mb-1">
+                              Your Output:
+                            </div>
+                            <div
+                              className={`border rounded px-3 py-2 text-sm font-mono ${
+                                result.status === "passed"
+                                  ? "text-green-400 bg-green-900/20 border-green-500"
+                                  : "text-red-400 bg-red-900/20 border-red-500"
+                              }`}
+                            >
+                              {result.userOutput}
+                            </div>
+                          </div>
+
+                          {/* Expected Output */}
+                          <div>
+                            <div className="text-xs font-medium text-gray-400 mb-1">
+                              Expected Output:
+                            </div>
+                            <div className="bg-[#1A1A1A] border border-gray-700 rounded px-3 py-2 text-sm text-gray-300 font-mono">
+                              {formatValue(selectedTestCases[activeTab].expectedOutput)}
+                            </div>
+                          </div>
+
+                          {/* Timing Info */}
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-gray-400">
+                              Expected Time: {selectedTestCases[activeTab].expectedTimeLimit}ms
+                            </span>
+                            <span
+                              className={`font-medium ${
+                                result.status === "tle"
+                                  ? "text-yellow-400"
+                                  : result.actualTime <= selectedTestCases[activeTab].expectedTimeLimit
+                                  ? "text-green-400"
+                                  : "text-yellow-400"
+                              }`}
+                            >
+                              Actual: {result.actualTime}ms
+                            </span>
+                          </div>
+
+                          {/* Status Messages */}
+                          {result.status === "tle" && (
+                            <div className="text-xs text-yellow-400 bg-yellow-900/20 p-2 rounded">
+                              ⚠️ Time Limit Exceeded
+                            </div>
+                          )}
+                          {result.status === "failed" && (
+                            <div className="text-xs text-red-400 bg-red-900/20 p-2 rounded">
+                              ❌ Output mismatch
+                            </div>
+                          )}
+                          {result.status === "passed" && (
+                            <div className="text-xs text-green-400 bg-green-900/20 p-2 rounded">
+                              ✓ Test case passed
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </>
+                ) : mode === "edit" ? (
+                  <>
+                    {/* Expected Output (Edit mode only) */}
+                    <div>
+                      <div className="text-xs font-medium text-gray-400 mb-1">Expected Output:</div>
+                      <div className="bg-[#1A1A1A] border border-gray-700 rounded px-3 py-2 text-sm text-gray-300 font-mono">
+                        {formatValue(selectedTestCases[activeTab].expectedOutput)}
+                      </div>
+                    </div>
+
+                    {/* Time Limit Info */}
+                    <div className="text-xs text-gray-500">
+                      Time Limit: {selectedTestCases[activeTab].expectedTimeLimit}ms
+                    </div>
+                  </>
+                ) : null}
+              </div>
+            )
+          )}
+        </div>
+      </div>
+
+      {/* Custom Scrollbar Styles */}
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #1a1a1a;
+          border-radius: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #404040;
+          border-radius: 4px;
+          border: 2px solid transparent;
+          background-clip: padding-box;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #525252;
+          border: 2px solid transparent;
+          background-clip: padding-box;
+        }
+
+        /* Firefox */
+        .custom-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: #404040 #1a1a1a;
+        }
+      `}</style>
+    </>
   );
 }

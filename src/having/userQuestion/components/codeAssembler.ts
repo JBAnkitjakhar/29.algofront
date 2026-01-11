@@ -1,4 +1,4 @@
-// src/having/userQuestion/components/codeAssembler.ts
+// src/having/userQuestion/components/codeAssembler.ts - COMPLETE FILE
 
 import type { TestCase } from "@/having/userQuestion/types";
 
@@ -163,6 +163,8 @@ int main() {
         vector<int> nums = testCases[tc];
         vector<vector<int>> result = solution.threeSum(nums);
         
+        sort(result.begin(), result.end());
+        
         auto endTime = chrono::high_resolution_clock::now();
         auto duration = chrono::duration_cast<chrono::milliseconds>(endTime - startTime);
         
@@ -195,6 +197,7 @@ int main() {
 
     return `
 import time
+import json
 
 ${userCode}
 
@@ -212,7 +215,10 @@ if __name__ == "__main__":
         
         time_ms = int((end_time - start_time) * 1000)
         
-        print(f"OUTPUT:{result}")
+        # Sort result for consistent output
+        result.sort()
+        
+        print(f"OUTPUT:{json.dumps(result)}")
         print(f"TIME:{time_ms}")
         print(f"TC_END:{tc_index}")
 `.trim();
@@ -247,6 +253,14 @@ for (let tc = 0; tc < testCases.length; tc++) {
     const solution = new Solution();
     const nums = testCases[tc];
     const result = solution.threeSum(nums);
+    
+    // Sort result for consistent output
+    result.sort((a, b) => {
+        for (let i = 0; i < Math.min(a.length, b.length); i++) {
+            if (a[i] !== b[i]) return a[i] - b[i];
+        }
+        return a.length - b.length;
+    });
     
     const endTime = Date.now();
     const timeMs = endTime - startTime;

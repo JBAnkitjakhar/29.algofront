@@ -1,4 +1,4 @@
-// src/having/userQuestion/types.ts - COMPLETE FILE
+// src/having/userQuestion/types.ts
 
 export interface QuestionDetail {
   id: string;
@@ -7,8 +7,13 @@ export interface QuestionDetail {
   statement: string;
   imageUrls: string[];
   imageFolderUrl: string | null;
-  codeSnippets: CodeSnippet[];
-  testCases: TestCase[];
+  
+  // ✅ Match backend field names exactly
+  userStarterCode: Record<string, string>;  // e.g., { "java": "class Solution {...}", "cpp": "..." }
+  generalTemplate: Record<string, string>;
+  correctSolution: Record<string, string>;
+  testcases: TestCase[];  // ✅ lowercase 'testcases' from backend
+  
   categoryId: string;
   level: 'EASY' | 'MEDIUM' | 'HARD';
   displayOrder: number;
@@ -18,12 +23,6 @@ export interface QuestionDetail {
   updatedAt: string;
 }
 
-export interface CodeSnippet {
-  language: string;
-  code: string;
-  description?: string;
-}
-
 export interface TestCase {
   id: number;
   input: Record<string, unknown>;
@@ -31,6 +30,7 @@ export interface TestCase {
   expectedTimeLimit: number;
 }
 
+// Rest of types remain the same...
 export interface UserQuestionProgress {
   solved: boolean;
   solvedAt: string | null;
@@ -119,7 +119,6 @@ export interface QuestionPageData {
   approaches: ApproachMetadata[];
 }
 
-// ✅ Backend response structure (what the API returns)
 export interface BackendTestCaseResult {
   index: number;
   output: string;

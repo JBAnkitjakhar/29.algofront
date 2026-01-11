@@ -1,4 +1,4 @@
-// src/having/userQuestion/components/resultComparator.ts
+// src/having/userQuestion/components/resultComparator.ts - COMPLETE FILE
 
 import type { TestCase } from "@/having/userQuestion/types";
 
@@ -42,8 +42,10 @@ export class ResultComparator {
     let firstTLE: TestCaseResult | null = null;
     let maxRuntime = 0;
 
-    for (const testCase of testCases) {
-      const parsed = parsedResults.get(testCase.id);
+    // ✅ Match by array index, not by test case ID
+    for (let index = 0; index < testCases.length; index++) {
+      const testCase = testCases[index];
+      const parsed = parsedResults.get(index); // ✅ Use index instead of testCase.id
       
       if (!parsed) {
         const result: TestCaseResult = {
@@ -145,7 +147,7 @@ export class ResultComparator {
       if (line.startsWith('TC_START:')) {
         currentIndex = parseInt(line.split(':')[1]);
       } else if (line.startsWith('OUTPUT:')) {
-        currentOutput = line.substring(7);
+        currentOutput = line.substring(7); // Remove "OUTPUT:" prefix
       } else if (line.startsWith('TIME:')) {
         currentTime = parseInt(line.split(':')[1]);
       } else if (line.startsWith('TC_END:')) {
@@ -171,6 +173,10 @@ export class ResultComparator {
         JSON.stringify(expectedOutput)
       );
 
+      console.log("Comparing outputs:");
+      console.log("User (normalized):", normalizedUser);
+      console.log("Expected (normalized):", normalizedExpected);
+
       return normalizedUser === normalizedExpected;
     } catch (error) {
       console.error("Output comparison error:", error);
@@ -180,12 +186,18 @@ export class ResultComparator {
 
   private static normalizeOutput(output: string): string {
     try {
+      // Remove all whitespace
       const normalized = output.replace(/\s+/g, "");
 
       try {
+        // Try to parse as JSON
         const parsed = JSON.parse(normalized);
+        
+        // If it's a 2D array (like [[1,2],[3,4]]), sort it
         if (Array.isArray(parsed) && parsed.length > 0 && Array.isArray(parsed[0])) {
+          // Sort each inner array
           const sorted = parsed.map((arr: number[]) => [...arr].sort((a, b) => a - b));
+          // Sort the outer array
           sorted.sort((a: number[], b: number[]) => {
             for (let i = 0; i < Math.min(a.length, b.length); i++) {
               if (a[i] !== b[i]) return a[i] - b[i];
@@ -194,8 +206,10 @@ export class ResultComparator {
           });
           return JSON.stringify(sorted);
         }
+        
         return JSON.stringify(parsed);
       } catch {
+        // If it's not valid JSON, return normalized string
         return normalized;
       }
     } catch {
