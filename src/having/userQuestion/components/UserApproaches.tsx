@@ -98,6 +98,13 @@ export function UserApproaches({
     }
   };
 
+  // ✅ Sort approaches by date (latest first)
+  const sortedApproaches = approaches 
+    ? [...approaches].sort((a, b) => 
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      )
+    : [];
+
   if (isLoading) {
     return (
       <div className="text-center py-8">
@@ -136,7 +143,7 @@ export function UserApproaches({
         </div>
       </div>
 
-      {approaches.map((approach) => (
+      {sortedApproaches.map((approach) => (
         <div
           key={approach.id}
           onClick={() => handleCardClick(approach.id)}
@@ -169,13 +176,15 @@ export function UserApproaches({
             </div>
 
             {/* ACCEPTED: Show runtime and memory */}
-            {approach.status === "ACCEPTED" && (
+            {approach.status === "ACCEPTED" && approach.runtime !== null && approach.memory !== null && (
               <div className="flex items-center space-x-4 mb-2 text-sm">
                 <span className="text-gray-400">
                   Runtime: <span className="text-green-400">{approach.runtime} ms</span>
                 </span>
                 <span className="text-gray-400">
-                  Memory: <span className="text-green-400">{(approach.memory! / 1024).toFixed(2)} MB</span>
+                  Memory: <span className="text-green-400">
+                    {(approach.memory / (1024 * 1024)).toFixed(2)} MB
+                  </span>
                 </span>
               </div>
             )}

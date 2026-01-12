@@ -1,9 +1,9 @@
-// src/components/questions/ApproachEditor.tsx
+// src/components/questions/ApproachEditor.tsx - UPDATED
 
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { ArrowLeft, Save, X, RotateCcw } from "lucide-react";
+import { ArrowLeft, Save, X, RotateCcw, CheckCircle, XCircle, Clock} from "lucide-react";
 import { Editor } from "@monaco-editor/react";
 import { useUpdateApproach } from "@/having/userQuestion/hooks";
 import type { ApproachDetail } from "@/having/userQuestion/types";
@@ -35,10 +35,7 @@ export function ApproachEditor({ approach, onBack }: ApproachEditorProps) {
 
   // Save panel width
   useEffect(() => {
-    localStorage.setItem(
-      "approach_editor_panel_width",
-      leftPanelWidth.toString()
-    );
+    localStorage.setItem("approach_editor_panel_width", leftPanelWidth.toString());
   }, [leftPanelWidth]);
 
   useEffect(() => {
@@ -48,7 +45,6 @@ export function ApproachEditor({ approach, onBack }: ApproachEditorProps) {
     setHasChanges(changed);
   }, [textContent, codeContent, approach]);
 
-  // Handle panel resizing
   const handlePanelMouseDown = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
@@ -63,13 +59,11 @@ export function ApproachEditor({ approach, onBack }: ApproachEditorProps) {
 
       const handleMouseMove = (moveEvent: MouseEvent) => {
         if (!isResizingRef.current) return;
-
         moveEvent.preventDefault();
 
         const deltaX = moveEvent.clientX - startX;
         const deltaPercent = (deltaX / containerWidth) * 100;
         const newWidth = startWidth + deltaPercent;
-
         const clampedWidth = Math.max(30, Math.min(70, newWidth));
 
         setLeftPanelWidth(clampedWidth);
@@ -132,9 +126,7 @@ export function ApproachEditor({ approach, onBack }: ApproachEditorProps) {
 
   const handleCancel = () => {
     if (hasChanges) {
-      if (
-        !confirm("You have unsaved changes. Are you sure you want to go back?")
-      ) {
+      if (!confirm("You have unsaved changes. Are you sure you want to go back?")) {
         return;
       }
     }
@@ -143,6 +135,29 @@ export function ApproachEditor({ approach, onBack }: ApproachEditorProps) {
 
   const textCharsLeft = TEXT_CONTENT_LIMIT - textContent.length;
   const codeCharsLeft = CODE_CONTENT_LIMIT - codeContent.length;
+
+  // Helper to get status icon
+  const getStatusIcon = () => {
+    switch (approach.status) {
+      case "ACCEPTED":
+        return <CheckCircle className="w-5 h-5 text-green-400" />;
+      case "WRONG_ANSWER":
+        return <XCircle className="w-5 h-5 text-red-400" />;
+      case "TLE":
+        return <Clock className="w-5 h-5 text-yellow-400" />;
+    }
+  };
+
+  const getStatusColor = () => {
+    switch (approach.status) {
+      case "ACCEPTED":
+        return "bg-green-900/20 border-green-500 text-green-400";
+      case "WRONG_ANSWER":
+        return "bg-red-900/20 border-red-500 text-red-400";
+      case "TLE":
+        return "bg-yellow-900/20 border-yellow-500 text-yellow-400";
+    }
+  };
 
   return (
     <div className="h-full flex flex-col bg-[#1A1A1A]">
@@ -186,9 +201,7 @@ export function ApproachEditor({ approach, onBack }: ApproachEditorProps) {
               ) : (
                 <Save className="w-4 h-4" />
               )}
-              <span>
-                {updateMutation.isPending ? "Saving..." : "Save Changes"}
-              </span>
+              <span>{updateMutation.isPending ? "Saving..." : "Save Changes"}</span>
             </button>
           </div>
         </div>
@@ -205,11 +218,7 @@ export function ApproachEditor({ approach, onBack }: ApproachEditorProps) {
             <h3 className="text-xs font-medium text-gray-300">
               Code ({approach.codeLanguage})
             </h3>
-            <span
-              className={`text-xs ${
-                codeCharsLeft < 0 ? "text-red-400" : "text-gray-500"
-              }`}
-            >
+            <span className={`text-xs ${codeCharsLeft < 0 ? "text-red-400" : "text-gray-500"}`}>
               {codeCharsLeft.toLocaleString()} characters left
             </span>
           </div>
@@ -240,31 +249,139 @@ export function ApproachEditor({ approach, onBack }: ApproachEditorProps) {
           <div className="absolute inset-y-0 -left-1 -right-1 group-hover:bg-blue-500/20"></div>
         </div>
 
-        {/* Right Panel - Description */}
+        {/* Right Panel - Status + Description */}
         <div
-          className="flex flex-col bg-[#262626]"
+          className="flex flex-col bg-[#262626] overflow-hidden"
           style={{ width: `${100 - leftPanelWidth}%` }}
         >
           <div className="flex items-center justify-between px-3 py-1.5 bg-[#1A1A1A] border-b border-gray-700">
             <h3 className="text-xs font-medium text-gray-300">Description</h3>
-            <span
-              className={`text-xs ${
-                textCharsLeft < 0 ? "text-red-400" : "text-gray-500"
-              }`}
-            >
+            <span className={`text-xs ${textCharsLeft < 0 ? "text-red-400" : "text-gray-500"}`}>
               {textCharsLeft.toLocaleString()} characters left
             </span>
           </div>
-          <div className="flex-1 min-h-0 p-4">
-            <textarea
-              value={textContent}
-              onChange={(e) => setTextContent(e.target.value)}
-              placeholder="Describe your approach, thought process, time/space complexity..."
-              className="w-full h-full resize-none bg-[#1A1A1A] text-gray-300 border border-gray-600 rounded-md p-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 overflow-auto"
-            />
+
+          <div className="flex-1 overflow-y-auto custom-scrollbar">
+            {/* Status Section - Fixed at top */}
+            <div className={`m-4 p-4 rounded-lg border ${getStatusColor()}`}>
+              <div className="flex items-center space-x-2 mb-3">
+                {getStatusIcon()}
+                <span className="font-semibold text-sm">
+                  {approach.status.replace("_", " ")}
+                </span>
+              </div>
+
+              {/* ACCEPTED - Show runtime + memory + complexity */}
+              {approach.status === "ACCEPTED" && (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <span className="text-gray-400">Runtime:</span>
+                      <span className="ml-2 font-medium">{approach.runtime} ms</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">Memory:</span>
+                      <span className="ml-2 font-medium">
+                        {(approach.memory! / 1024 / 1024).toFixed(2)} MB
+                      </span>
+                    </div>
+                  </div>
+
+                  {approach.complexityAnalysis && (
+                    <div className="pt-2 border-t border-green-500/30">
+                      <div className="flex items-center space-x-4 text-sm">
+                        <div>
+                          <span className="text-gray-400">Time:</span>
+                          <span className="ml-2 font-medium text-purple-400">
+                            {approach.complexityAnalysis.timeComplexity}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400">Space:</span>
+                          <span className="ml-2 font-medium text-purple-400">
+                            {approach.complexityAnalysis.spaceComplexity}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* WRONG_ANSWER - Show failed test case */}
+              {approach.status === "WRONG_ANSWER" && approach.wrongTestcase && (
+                <div className="space-y-2 text-sm">
+                  <div className="font-medium">Failed Test Case:</div>
+                  <div className="bg-[#1A1A1A] rounded p-2 space-y-1 font-mono text-xs">
+                    <div>
+                      <span className="text-gray-500">Input:</span>
+                      <span className="ml-2">{approach.wrongTestcase.input}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Expected:</span>
+                      <span className="ml-2 text-green-400">
+                        {approach.wrongTestcase.expectedOutput}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Your Output:</span>
+                      <span className="ml-2 text-red-400">
+                        {approach.wrongTestcase.userOutput}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TLE - Show timeout test case */}
+              {approach.status === "TLE" && approach.tleTestcase && (
+                <div className="space-y-2 text-sm">
+                  <div className="font-medium">Time Limit Exceeded:</div>
+                  <div className="bg-[#1A1A1A] rounded p-2 space-y-1 font-mono text-xs">
+                    <div>
+                      <span className="text-gray-500">Input:</span>
+                      <span className="ml-2">{approach.tleTestcase.input}</span>
+                    </div>
+                    {approach.runtime && (
+                      <div>
+                        <span className="text-gray-500">Runtime:</span>
+                        <span className="ml-2">{approach.runtime} ms</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Description Textarea */}
+            <div className="p-4 pt-0">
+              <textarea
+                value={textContent}
+                onChange={(e) => setTextContent(e.target.value)}
+                placeholder="Describe your approach, thought process, optimizations..."
+                className="w-full h-96 resize-none bg-[#1A1A1A] text-gray-300 border border-gray-600 rounded-md p-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Custom Scrollbar */}
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #1a1a1a;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #404040;
+          border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #525252;
+        }
+      `}</style>
     </div>
   );
 }
