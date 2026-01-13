@@ -4,10 +4,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { userQuestionService } from "./service";
 import { USER_QUESTION_QUERY_KEYS } from "./constants";
 import toast from "react-hot-toast";
-import type { 
-  CreateApproachRequest, 
+import type {
+  CreateApproachRequest,
   UpdateApproachRequest,
-  AnalyzeComplexityRequest 
+  AnalyzeComplexityBackendRequest,
+  AnalyzeComplexityRequest,
 } from "./types";
 
 export function useQuestionById(id: string) {
@@ -30,7 +31,9 @@ export function useQuestionProgress(questionId: string) {
   return useQuery({
     queryKey: USER_QUESTION_QUERY_KEYS.PROGRESS(questionId),
     queryFn: async () => {
-      const response = await userQuestionService.getQuestionProgress(questionId);
+      const response = await userQuestionService.getQuestionProgress(
+        questionId
+      );
       if (!response.success) {
         throw new Error(response.error || "Failed to fetch progress");
       }
@@ -49,7 +52,9 @@ export function useMarkQuestionSolved() {
     mutationFn: async (questionId: string) => {
       const response = await userQuestionService.markQuestionSolved(questionId);
       if (!response.success) {
-        throw new Error(response.error || response.message || "Failed to mark as solved");
+        throw new Error(
+          response.error || response.message || "Failed to mark as solved"
+        );
       }
     },
     onSuccess: (_, questionId) => {
@@ -72,9 +77,13 @@ export function useUnmarkQuestionSolved() {
 
   return useMutation({
     mutationFn: async (questionId: string) => {
-      const response = await userQuestionService.unmarkQuestionSolved(questionId);
+      const response = await userQuestionService.unmarkQuestionSolved(
+        questionId
+      );
       if (!response.success) {
-        throw new Error(response.error || response.message || "Failed to unmark");
+        throw new Error(
+          response.error || response.message || "Failed to unmark"
+        );
       }
     },
     onSuccess: (_, questionId) => {
@@ -96,7 +105,9 @@ export function useSolutionsByQuestion(questionId: string) {
   return useQuery({
     queryKey: USER_QUESTION_QUERY_KEYS.SOLUTIONS(questionId),
     queryFn: async () => {
-      const response = await userQuestionService.getSolutionsByQuestion(questionId);
+      const response = await userQuestionService.getSolutionsByQuestion(
+        questionId
+      );
       if (!response.success) {
         throw new Error(response.error || "Failed to fetch solutions");
       }
@@ -112,7 +123,9 @@ export function useApproachesByQuestion(questionId: string) {
   return useQuery({
     queryKey: USER_QUESTION_QUERY_KEYS.APPROACHES(questionId),
     queryFn: async () => {
-      const response = await userQuestionService.getApproachesByQuestion(questionId);
+      const response = await userQuestionService.getApproachesByQuestion(
+        questionId
+      );
       if (!response.success) {
         throw new Error(response.error || "Failed to fetch approaches");
       }
@@ -128,7 +141,10 @@ export function useApproachDetail(questionId: string, approachId: string) {
   return useQuery({
     queryKey: USER_QUESTION_QUERY_KEYS.APPROACH_DETAIL(questionId, approachId),
     queryFn: async () => {
-      const response = await userQuestionService.getApproachDetail(questionId, approachId);
+      const response = await userQuestionService.getApproachDetail(
+        questionId,
+        approachId
+      );
       if (!response.success) {
         throw new Error(response.error || "Failed to fetch approach detail");
       }
@@ -151,9 +167,14 @@ export function useCreateApproach() {
       questionId: string;
       data: CreateApproachRequest;
     }) => {
-      const response = await userQuestionService.createApproach(questionId, data);
+      const response = await userQuestionService.createApproach(
+        questionId,
+        data
+      );
       if (!response.success) {
-        throw new Error(response.error || response.message || "Failed to create approach");
+        throw new Error(
+          response.error || response.message || "Failed to create approach"
+        );
       }
       return response.data!;
     },
@@ -182,9 +203,15 @@ export function useUpdateApproach() {
       approachId: string;
       data: UpdateApproachRequest;
     }) => {
-      const response = await userQuestionService.updateApproach(questionId, approachId, data);
+      const response = await userQuestionService.updateApproach(
+        questionId,
+        approachId,
+        data
+      );
       if (!response.success) {
-        throw new Error(response.error || response.message || "Failed to update approach");
+        throw new Error(
+          response.error || response.message || "Failed to update approach"
+        );
       }
       return response.data!;
     },
@@ -196,7 +223,6 @@ export function useUpdateApproach() {
       queryClient.invalidateQueries({
         queryKey: USER_QUESTION_QUERY_KEYS.APPROACHES(questionId),
       });
-      toast.success("Approach updated successfully!");
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -215,9 +241,14 @@ export function useDeleteApproach() {
       questionId: string;
       approachId: string;
     }) => {
-      const response = await userQuestionService.deleteApproach(questionId, approachId);
+      const response = await userQuestionService.deleteApproach(
+        questionId,
+        approachId
+      );
       if (!response.success) {
-        throw new Error(response.error || response.message || "Failed to delete approach");
+        throw new Error(
+          response.error || response.message || "Failed to delete approach"
+        );
       }
     },
     onSuccess: (_, { questionId }) => {
@@ -232,7 +263,23 @@ export function useDeleteApproach() {
   });
 }
 
-export function useAnalyzeComplexity() {
+export function useAnalyzeComplexityWithAI() {
+  return useMutation({
+    mutationFn: async (data: AnalyzeComplexityBackendRequest) => {
+      const response = await userQuestionService.analyzeComplexityWithAI(data);
+      if (!response.success) {
+        throw new Error(
+          response.error || response.message || "Failed to analyze complexity"
+        );
+      }
+
+      console.log("Hook - AI response.data:", response.data);
+      return response.data!;
+    },
+  });
+}
+
+export function useSaveComplexityAnalysis() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -245,9 +292,17 @@ export function useAnalyzeComplexity() {
       approachId: string;
       data: AnalyzeComplexityRequest;
     }) => {
-      const response = await userQuestionService.analyzeComplexity(questionId, approachId, data);
+      const response = await userQuestionService.saveComplexityAnalysis(
+        questionId,
+        approachId,
+        data
+      );
       if (!response.success) {
-        throw new Error(response.error || response.message || "Failed to analyze complexity");
+        throw new Error(
+          response.error ||
+            response.message ||
+            "Failed to save complexity analysis"
+        );
       }
       return response.data!;
     },
@@ -259,10 +314,6 @@ export function useAnalyzeComplexity() {
       queryClient.invalidateQueries({
         queryKey: USER_QUESTION_QUERY_KEYS.APPROACHES(questionId),
       });
-      toast.success("Complexity analysis added successfully!");
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
     },
   });
 }

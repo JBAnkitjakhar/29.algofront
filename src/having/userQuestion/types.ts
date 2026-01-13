@@ -8,11 +8,10 @@ export interface QuestionDetail {
   imageUrls: string[];
   imageFolderUrl: string | null;
   
-  // ✅ Match backend field names exactly
-  userStarterCode: Record<string, string>;  // e.g., { "java": "class Solution {...}", "cpp": "..." }
+  userStarterCode: Record<string, string>;
   generalTemplate: Record<string, string>;
   correctSolution: Record<string, string>;
-  testcases: TestCase[];  // ✅ lowercase 'testcases' from backend
+  testcases: TestCase[];
   
   categoryId: string;
   level: 'EASY' | 'MEDIUM' | 'HARD';
@@ -30,7 +29,6 @@ export interface TestCase {
   expectedTimeLimit: number;
 }
 
-// Rest of types remain the same...
 export interface UserQuestionProgress {
   solved: boolean;
   solvedAt: string | null;
@@ -58,6 +56,7 @@ export type ApproachStatus = 'ACCEPTED' | 'WRONG_ANSWER' | 'TLE';
 export interface ComplexityAnalysis {
   timeComplexity: string;
   spaceComplexity: string;
+  complexityDescription: string;
 }
 
 export interface TestCaseFailure {
@@ -103,13 +102,23 @@ export interface CreateApproachRequest {
 
 export interface UpdateApproachRequest {
   textContent: string;
-  codeContent: string;
-  codeLanguage: string;
 }
 
 export interface AnalyzeComplexityRequest {
   timeComplexity: string;
   spaceComplexity: string;
+  complexityDescription: string;
+}
+
+export interface AnalyzeComplexityBackendRequest {
+  code: string;
+  language?: string;
+}
+
+export interface AnalyzeComplexityBackendResponse {
+  timeComplexity: string;
+  spaceComplexity: string;
+  complexityDescription: string;
 }
 
 export interface QuestionPageData {

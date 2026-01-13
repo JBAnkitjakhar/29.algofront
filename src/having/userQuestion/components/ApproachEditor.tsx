@@ -1,11 +1,25 @@
-// src/components/questions/ApproachEditor.tsx - UPDATED
+// src/having/userQuestion/components/ApproachEditor.tsx
 
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { ArrowLeft, Save, X, RotateCcw, CheckCircle, XCircle, Clock} from "lucide-react";
+import {
+  ArrowLeft,
+  Save,
+  X,
+  RotateCcw,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Sparkles,
+} from "lucide-react";
 import { Editor } from "@monaco-editor/react";
-import { useUpdateApproach } from "@/having/userQuestion/hooks";
+import {
+  useUpdateApproach,
+  useAnalyzeComplexityWithAI,
+  useSaveComplexityAnalysis,
+} from "@/having/userQuestion/hooks";
+import { ComplexityAnalysisModal } from "./ComplexityAnalysisModal";
 import type { ApproachDetail } from "@/having/userQuestion/types";
 import toast from "react-hot-toast";
 
@@ -15,35 +29,41 @@ interface ApproachEditorProps {
 }
 
 const TEXT_CONTENT_LIMIT = 50000;
-const CODE_CONTENT_LIMIT = 50000;
 
 export function ApproachEditor({ approach, onBack }: ApproachEditorProps) {
   const [textContent, setTextContent] = useState(approach.textContent);
-  const [codeContent, setCodeContent] = useState(approach.codeContent);
   const [hasChanges, setHasChanges] = useState(false);
   const [leftPanelWidth, setLeftPanelWidth] = useState(50);
+  const [showComplexityModal, setShowComplexityModal] = useState(false);
+  const [complexityResult, setComplexityResult] = useState<{
+    timeComplexity: string;
+    spaceComplexity: string;
+    description: string;
+  } | null>(null);
+  const [complexityError, setComplexityError] = useState("");
 
   const updateMutation = useUpdateApproach();
+  const analyzeAIMutation = useAnalyzeComplexityWithAI();
+  const saveMutation = useSaveComplexityAnalysis();
   const isResizingRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Load saved panel width
   useEffect(() => {
     const savedWidth = localStorage.getItem("approach_editor_panel_width");
     if (savedWidth) setLeftPanelWidth(parseFloat(savedWidth));
   }, []);
 
-  // Save panel width
   useEffect(() => {
-    localStorage.setItem("approach_editor_panel_width", leftPanelWidth.toString());
+    localStorage.setItem(
+      "approach_editor_panel_width",
+      leftPanelWidth.toString()
+    );
   }, [leftPanelWidth]);
 
   useEffect(() => {
-    const changed =
-      textContent !== approach.textContent ||
-      codeContent !== approach.codeContent;
+    const changed = textContent !== approach.textContent;
     setHasChanges(changed);
-  }, [textContent, codeContent, approach]);
+  }, [textContent, approach]);
 
   const handlePanelMouseDown = useCallback(
     (e: React.MouseEvent) => {
@@ -91,19 +111,12 @@ export function ApproachEditor({ approach, onBack }: ApproachEditorProps) {
       return;
     }
 
-    if (codeContent.length > CODE_CONTENT_LIMIT) {
-      toast.error(`Code exceeds ${CODE_CONTENT_LIMIT} characters`);
-      return;
-    }
-
     updateMutation.mutate(
       {
         questionId: approach.questionId,
         approachId: approach.id,
         data: {
           textContent,
-          codeContent,
-          codeLanguage: approach.codeLanguage,
         },
       },
       {
@@ -121,22 +134,100 @@ export function ApproachEditor({ approach, onBack }: ApproachEditorProps) {
 
   const handleReset = () => {
     setTextContent(approach.textContent);
-    setCodeContent(approach.codeContent);
   };
 
   const handleCancel = () => {
     if (hasChanges) {
-      if (!confirm("You have unsaved changes. Are you sure you want to go back?")) {
+      if (
+        !confirm("You have unsaved changes. Are you sure you want to go back?")
+      ) {
         return;
       }
     }
     onBack();
   };
 
-  const textCharsLeft = TEXT_CONTENT_LIMIT - textContent.length;
-  const codeCharsLeft = CODE_CONTENT_LIMIT - codeContent.length;
+  const handleAnalyzeComplexity = () => {
+    if (approach.complexityAnalysis) {
+      setComplexityResult({
+        timeComplexity: approach.complexityAnalysis.timeComplexity,
+        spaceComplexity: approach.complexityAnalysis.spaceComplexity,
+        description: approach.complexityAnalysis.complexityDescription || "",
+      });
+      setComplexityError("");
+      setShowComplexityModal(true);
+      return;
+    }
 
-  // Helper to get status icon
+    analyzeAIMutation.mutate(
+      { code: approach.codeContent, language: approach.codeLanguage },
+      {
+        onSuccess: (data) => {
+          console.log("AI Analysis Response:", data); // Debug log
+
+          const payload = {
+            timeComplexity: data.timeComplexity,
+            spaceComplexity: data.spaceComplexity,
+            complexityDescription: data.complexityDescription || "",
+          };
+
+          console.log("Saving payload:", payload); // Debug log
+
+          saveMutation.mutate(
+            {
+              questionId: approach.questionId,
+              approachId: approach.id,
+              data: payload,
+            },
+            {
+              onSuccess: () => {
+                setComplexityResult({
+                  timeComplexity: data.timeComplexity,
+                  spaceComplexity: data.spaceComplexity,
+                  description: data.complexityDescription || "",
+                });
+                setComplexityError("");
+                setShowComplexityModal(true);
+              },
+              onError: (error: Error) => {
+                console.error("Save error:", error); // Debug log
+                setComplexityError(error.message);
+                setShowComplexityModal(true);
+              },
+            }
+          );
+        },
+        onError: (error: Error) => {
+          console.error("AI Analysis error:", error); // Debug log
+          if (
+            error.message.includes("429") ||
+            error.message.includes("quota") ||
+            error.message.includes("rate limit")
+          ) {
+            setComplexityError(
+              "Rate limit exceeded. Please wait a moment and try again."
+            );
+          } else {
+            setComplexityError(
+              error.message || "Failed to analyze complexity. Please try again."
+            );
+          }
+          setShowComplexityModal(true);
+        },
+      }
+    );
+  };
+
+  const handleRetryAnalysis = () => {
+    setShowComplexityModal(false);
+    setComplexityError("");
+    setComplexityResult(null);
+    handleAnalyzeComplexity();
+  };
+
+  const textCharsLeft = TEXT_CONTENT_LIMIT - textContent.length;
+  const isAnalyzing = analyzeAIMutation.isPending || saveMutation.isPending;
+
   const getStatusIcon = () => {
     switch (approach.status) {
       case "ACCEPTED":
@@ -161,7 +252,6 @@ export function ApproachEditor({ approach, onBack }: ApproachEditorProps) {
 
   return (
     <div className="h-full flex flex-col bg-[#1A1A1A]">
-      {/* Header with Actions */}
       <div className="border-b border-gray-700 px-4 py-2 bg-[#262626]">
         <div className="flex items-center justify-between">
           <button
@@ -201,15 +291,15 @@ export function ApproachEditor({ approach, onBack }: ApproachEditorProps) {
               ) : (
                 <Save className="w-4 h-4" />
               )}
-              <span>{updateMutation.isPending ? "Saving..." : "Save Changes"}</span>
+              <span>
+                {updateMutation.isPending ? "Saving..." : "Save Changes"}
+              </span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Resizable Panels */}
       <div className="flex-1 flex min-h-0" ref={containerRef}>
-        {/* Left Panel - Code Editor */}
         <div
           className="flex flex-col bg-[#262626] border-r border-gray-700"
           style={{ width: `${leftPanelWidth}%` }}
@@ -218,16 +308,12 @@ export function ApproachEditor({ approach, onBack }: ApproachEditorProps) {
             <h3 className="text-xs font-medium text-gray-300">
               Code ({approach.codeLanguage})
             </h3>
-            <span className={`text-xs ${codeCharsLeft < 0 ? "text-red-400" : "text-gray-500"}`}>
-              {codeCharsLeft.toLocaleString()} characters left
-            </span>
           </div>
           <div className="flex-1 min-h-0">
             <Editor
               height="100%"
               language={approach.codeLanguage.toLowerCase()}
-              value={codeContent}
-              onChange={(value) => setCodeContent(value || "")}
+              value={approach.codeContent}
               theme="vs-dark"
               options={{
                 fontSize: 14,
@@ -236,12 +322,12 @@ export function ApproachEditor({ approach, onBack }: ApproachEditorProps) {
                 automaticLayout: true,
                 wordWrap: "on",
                 lineNumbers: "on",
+                readOnly: true,
               }}
             />
           </div>
         </div>
 
-        {/* Resizer */}
         <div
           className="w-1 bg-gray-700 cursor-col-resize hover:bg-blue-500 transition-colors relative group"
           onMouseDown={handlePanelMouseDown}
@@ -249,20 +335,22 @@ export function ApproachEditor({ approach, onBack }: ApproachEditorProps) {
           <div className="absolute inset-y-0 -left-1 -right-1 group-hover:bg-blue-500/20"></div>
         </div>
 
-        {/* Right Panel - Status + Description */}
         <div
           className="flex flex-col bg-[#262626] overflow-hidden"
           style={{ width: `${100 - leftPanelWidth}%` }}
         >
           <div className="flex items-center justify-between px-3 py-1.5 bg-[#1A1A1A] border-b border-gray-700">
             <h3 className="text-xs font-medium text-gray-300">Description</h3>
-            <span className={`text-xs ${textCharsLeft < 0 ? "text-red-400" : "text-gray-500"}`}>
+            <span
+              className={`text-xs ${
+                textCharsLeft < 0 ? "text-red-400" : "text-gray-500"
+              }`}
+            >
               {textCharsLeft.toLocaleString()} characters left
             </span>
           </div>
 
           <div className="flex-1 overflow-y-auto custom-scrollbar">
-            {/* Status Section - Fixed at top */}
             <div className={`m-4 p-4 rounded-lg border ${getStatusColor()}`}>
               <div className="flex items-center space-x-2 mb-3">
                 {getStatusIcon()}
@@ -271,13 +359,14 @@ export function ApproachEditor({ approach, onBack }: ApproachEditorProps) {
                 </span>
               </div>
 
-              {/* ACCEPTED - Show runtime + memory + complexity */}
               {approach.status === "ACCEPTED" && (
                 <div className="space-y-2">
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
                       <span className="text-gray-400">Runtime:</span>
-                      <span className="ml-2 font-medium">{approach.runtime} ms</span>
+                      <span className="ml-2 font-medium">
+                        {approach.runtime} ms
+                      </span>
                     </div>
                     <div>
                       <span className="text-gray-400">Memory:</span>
@@ -287,35 +376,37 @@ export function ApproachEditor({ approach, onBack }: ApproachEditorProps) {
                     </div>
                   </div>
 
-                  {approach.complexityAnalysis && (
-                    <div className="pt-2 border-t border-green-500/30">
-                      <div className="flex items-center space-x-4 text-sm">
-                        <div>
-                          <span className="text-gray-400">Time:</span>
-                          <span className="ml-2 font-medium text-purple-400">
-                            {approach.complexityAnalysis.timeComplexity}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-gray-400">Space:</span>
-                          <span className="ml-2 font-medium text-purple-400">
-                            {approach.complexityAnalysis.spaceComplexity}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                  <div className="pt-2 border-t border-green-500/30">
+                    <button
+                      onClick={handleAnalyzeComplexity}
+                      disabled={isAnalyzing}
+                      className="flex items-center space-x-2 px-3 py-1.5 bg-purple-900/30 text-purple-400 hover:bg-purple-900/40 rounded text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isAnalyzing ? (
+                        <>
+                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-purple-400"></div>
+                          <span>Analyzing...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-3 h-3" />
+                          <span>Analyze Complexity</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
               )}
 
-              {/* WRONG_ANSWER - Show failed test case */}
               {approach.status === "WRONG_ANSWER" && approach.wrongTestcase && (
                 <div className="space-y-2 text-sm">
                   <div className="font-medium">Failed Test Case:</div>
                   <div className="bg-[#1A1A1A] rounded p-2 space-y-1 font-mono text-xs">
                     <div>
                       <span className="text-gray-500">Input:</span>
-                      <span className="ml-2">{approach.wrongTestcase.input}</span>
+                      <span className="ml-2">
+                        {approach.wrongTestcase.input}
+                      </span>
                     </div>
                     <div>
                       <span className="text-gray-500">Expected:</span>
@@ -333,7 +424,6 @@ export function ApproachEditor({ approach, onBack }: ApproachEditorProps) {
                 </div>
               )}
 
-              {/* TLE - Show timeout test case */}
               {approach.status === "TLE" && approach.tleTestcase && (
                 <div className="space-y-2 text-sm">
                   <div className="font-medium">Time Limit Exceeded:</div>
@@ -353,7 +443,6 @@ export function ApproachEditor({ approach, onBack }: ApproachEditorProps) {
               )}
             </div>
 
-            {/* Description Textarea */}
             <div className="p-4 pt-0">
               <textarea
                 value={textContent}
@@ -366,7 +455,21 @@ export function ApproachEditor({ approach, onBack }: ApproachEditorProps) {
         </div>
       </div>
 
-      {/* Custom Scrollbar */}
+      {showComplexityModal && (
+        <ComplexityAnalysisModal
+          timeComplexity={complexityResult?.timeComplexity || ""}
+          spaceComplexity={complexityResult?.spaceComplexity || ""}
+          description={complexityResult?.description || ""}
+          error={complexityError}
+          onClose={() => {
+            setShowComplexityModal(false);
+            setComplexityError("");
+            setComplexityResult(null);
+          }}
+          onRetry={complexityError ? handleRetryAnalysis : undefined}
+        />
+      )}
+
       <style jsx>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 8px;

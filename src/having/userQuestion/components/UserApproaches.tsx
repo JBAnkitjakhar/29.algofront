@@ -1,4 +1,4 @@
-// src/having/userQuestion/components/UserApproaches.tsx - UPDATED
+// src/having/userQuestion/components/UserApproaches.tsx
 
 "use client";
 
@@ -9,7 +9,6 @@ import {
   CheckCircle, 
   XCircle, 
   Clock,
-  TrendingUp 
 } from "lucide-react";
 import {
   useApproachesByQuestion,
@@ -18,7 +17,6 @@ import {
 } from "@/having/userQuestion/hooks";
 import { dateUtils } from "@/lib/utils/common";
 import type { ApproachDetail } from "@/having/userQuestion/types";
-import { ComplexityAnalysisModal } from "./ComplexityAnalysisModal";
 
 interface UserApproachesProps {
   questionId: string;
@@ -31,8 +29,6 @@ export function UserApproaches({
 }: UserApproachesProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [loadingApproachId, setLoadingApproachId] = useState<string | null>(null);
-  const [showComplexityModal, setShowComplexityModal] = useState(false);
-  const [selectedApproachForComplexity, setSelectedApproachForComplexity] = useState<string | null>(null);
 
   const { data: approaches, isLoading } = useApproachesByQuestion(questionId);
   const deleteMutation = useDeleteApproach();
@@ -66,12 +62,6 @@ export function UserApproaches({
     setLoadingApproachId(approachId);
   };
 
-  const handleAnalyzeComplexity = (e: React.MouseEvent, approachId: string) => {
-    e.stopPropagation();
-    setSelectedApproachForComplexity(approachId);
-    setShowComplexityModal(true);
-  };
-
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "ACCEPTED":
@@ -98,7 +88,6 @@ export function UserApproaches({
     }
   };
 
-  // ✅ Sort approaches by date (latest first)
   const sortedApproaches = approaches 
     ? [...approaches].sort((a, b) => 
         new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
@@ -175,7 +164,6 @@ export function UserApproaches({
               </button>
             </div>
 
-            {/* ACCEPTED: Show runtime and memory */}
             {approach.status === "ACCEPTED" && approach.runtime !== null && approach.memory !== null && (
               <div className="flex items-center space-x-4 mb-2 text-sm">
                 <span className="text-gray-400">
@@ -189,7 +177,6 @@ export function UserApproaches({
               </div>
             )}
 
-            {/* WRONG_ANSWER: Show failed testcase info */}
             {approach.status === "WRONG_ANSWER" && approach.wrongTestcase && (
               <div className="mb-2 p-2 bg-red-900/10 border border-red-900/30 rounded text-xs">
                 <div className="text-red-400 font-medium mb-1">Failed Test Case:</div>
@@ -201,7 +188,6 @@ export function UserApproaches({
               </div>
             )}
 
-            {/* TLE: Show TLE testcase info */}
             {approach.status === "TLE" && approach.tleTestcase && (
               <div className="mb-2 p-2 bg-yellow-900/10 border border-yellow-900/30 rounded text-xs">
                 <div className="text-yellow-400 font-medium mb-1">Time Limit Exceeded:</div>
@@ -211,27 +197,16 @@ export function UserApproaches({
               </div>
             )}
 
-            {/* Complexity Analysis (only for ACCEPTED) */}
-            {approach.status === "ACCEPTED" && (
+            {approach.status === "ACCEPTED" && approach.complexityAnalysis && (
               <div className="mt-3 pt-3 border-t border-gray-700">
-                {approach.complexityAnalysis ? (
-                  <div className="flex items-center space-x-4 text-sm">
-                    <span className="text-gray-400">
-                      Time: <span className="text-purple-400">{approach.complexityAnalysis.timeComplexity}</span>
-                    </span>
-                    <span className="text-gray-400">
-                      Space: <span className="text-purple-400">{approach.complexityAnalysis.spaceComplexity}</span>
-                    </span>
-                  </div>
-                ) : (
-                  <button
-                    onClick={(e) => handleAnalyzeComplexity(e, approach.id)}
-                    className="flex items-center space-x-2 px-3 py-1.5 bg-purple-900/30 text-purple-400 hover:bg-purple-900/40 rounded text-xs transition-colors"
-                  >
-                    <TrendingUp className="w-3 h-3" />
-                    <span>Analyze Complexity</span>
-                  </button>
-                )}
+                <div className="flex items-center space-x-4 text-sm">
+                  <span className="text-gray-400">
+                    Time: <span className="text-purple-400">{approach.complexityAnalysis.timeComplexity}</span>
+                  </span>
+                  <span className="text-gray-400">
+                    Space: <span className="text-purple-400">{approach.complexityAnalysis.spaceComplexity}</span>
+                  </span>
+                </div>
               </div>
             )}
 
@@ -246,21 +221,6 @@ export function UserApproaches({
           </div>
         </div>
       ))}
-
-      {/* Complexity Analysis Modal */}
-      {showComplexityModal && selectedApproachForComplexity && (
-        <ComplexityAnalysisModal
-          questionId={questionId}
-          approachId={selectedApproachForComplexity}
-          onClose={() => {
-            setShowComplexityModal(false);
-            setSelectedApproachForComplexity(null);
-          }}
-          onSuccess={() => {
-            // Modal will close itself and invalidate queries
-          }}
-        />
-      )}
     </div>
   );
 }

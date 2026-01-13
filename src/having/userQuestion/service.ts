@@ -1,4 +1,4 @@
-// src/having/userQuestion/service.ts - COMPLETE FILE
+// src/having/userQuestion/service.ts
 
 import { apiClient } from "@/lib/api/client";
 import type { ApiResponse } from "@/types";
@@ -11,7 +11,16 @@ import type {
   CreateApproachRequest,
   UpdateApproachRequest,
   AnalyzeComplexityRequest,
+  AnalyzeComplexityBackendRequest,
+  AnalyzeComplexityBackendResponse,
 } from "./types";
+
+// Define the backend wrapper type
+interface BackendWrappedResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+}
 
 class UserQuestionService {
   async getQuestionById(id: string): Promise<ApiResponse<QuestionDetail>> {
@@ -63,11 +72,10 @@ class UserQuestionService {
     questionId: string,
     data: CreateApproachRequest
   ): Promise<ApiResponse<ApproachDetail>> {
-    const response = await apiClient.post<ApproachDetail>(
+    return apiClient.post<ApproachDetail>(
       `/approaches/question/${questionId}`,
       data
     );
-    return response;
   }
 
   async updateApproach(
@@ -90,7 +98,29 @@ class UserQuestionService {
     );
   }
 
-  async analyzeComplexity(
+  async analyzeComplexityWithAI(
+    data: AnalyzeComplexityBackendRequest
+  ): Promise<ApiResponse<AnalyzeComplexityBackendResponse>> {
+    const response = await apiClient.post<BackendWrappedResponse<AnalyzeComplexityBackendResponse>>(
+      `/complexity/analyze`,
+      data
+    );
+    
+    // Backend returns { success: true, data: { timeComplexity, spaceComplexity, complexityDescription }, message }
+    // Extract the nested data
+    if (response.success && response.data) {
+      const wrappedData = response.data as BackendWrappedResponse<AnalyzeComplexityBackendResponse>;
+      const nestedData = wrappedData.data || response.data;
+      return {
+        success: true,
+        data: nestedData as AnalyzeComplexityBackendResponse,
+      };
+    }
+    
+    return response as ApiResponse<AnalyzeComplexityBackendResponse>;
+  }
+
+  async saveComplexityAnalysis(
     questionId: string,
     approachId: string,
     data: AnalyzeComplexityRequest
