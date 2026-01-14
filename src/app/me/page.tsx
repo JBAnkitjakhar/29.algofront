@@ -4,7 +4,8 @@
 
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useUserProgressStats, usePaginatedSolvedQuestions } from "@/having/userstats/hooks";
+import { useUserProgressStats, usePaginatedSolvedQuestions, useSubmissionHistory } from "@/having/userstats/hooks";
+import { SubmissionHeatmap } from "@/having/userstats/components/SubmissionHeatmap";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import UserLayout from "@/components/layout/UserLayout";
 import { dateUtils } from "@/lib/utils/common";
@@ -240,6 +241,7 @@ function Pagination({
 function Content() {
   const { user } = useAuth();
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear()); // ⭐ NEW: Track selected year
   
   const {
     data: stats,
@@ -251,6 +253,11 @@ function Content() {
     data: paginatedData,
     isLoading: paginatedLoading,
   } = usePaginatedSolvedQuestions(currentPage);
+
+  const {
+    data: submissionStats,
+    isLoading: submissionLoading,
+  } = useSubmissionHistory(selectedYear); // ⭐ Pass selected year to fetch correct data
 
   if (!user) return null;
 
@@ -271,6 +278,19 @@ function Content() {
       <div className="min-h-screen bg-[#1A1A1A]">
         <div className="max-w-6xl mx-auto p-6 space-y-6">
           
+          {/* Submission Heatmap - Now with year selection */}
+          {submissionLoading ? (
+            <div className="h-[200px]">
+              <ShimmerLoader />
+            </div>
+          ) : submissionStats ? (
+            <SubmissionHeatmap 
+              stats={submissionStats} 
+              selectedYear={selectedYear}
+              onYearChange={setSelectedYear} // ⭐ Pass callback to handle year change
+            />
+          ) : null}
+
           {/* Problems Solved Section */}
           <div className="bg-[#262626] rounded-lg border border-gray-700 p-5">
             {statsLoading ? (

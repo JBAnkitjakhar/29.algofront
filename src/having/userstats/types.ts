@@ -44,7 +44,7 @@ export interface UserProgressStats {
   totalSolved: number;
   totalQuestions: number;
   progressPercentage: number;
-  
+
   // Level-wise breakdown
   solvedByLevel: {
     easy: number;
@@ -61,11 +61,11 @@ export interface UserProgressStats {
     medium: number;
     hard: number;
   };
-  
+
   // Recent activity (last 7 days)
   recentSolved: number;
   recentSolvedQuestions: SolvedQuestionDetail[];
-  
+
   // All solved questions (sorted by latest first)
   allSolvedQuestions: SolvedQuestionDetail[];
 }
@@ -77,4 +77,31 @@ export interface PaginatedQuestions {
   totalPages: number;
   pageSize: number;
   totalItems: number;
+}
+
+export interface DailySubmission {
+  date: string; // YYYY-MM-DD format
+  count: number;
+}
+
+export interface SubmissionHistoryResponse {
+  userId: string;
+  submissionHistory: DailySubmission[];
+  totalSubmissions: number;
+  totalDays: number;
+}
+
+export interface HeatmapData {
+  date: string;
+  count: number;
+  level: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7; // 0=none, 1=low, 2=medium, 3=high, 4=very high
+}
+
+export interface YearStats {
+  year: number;
+  totalSubmissions: number;
+  totalDays: number;
+  maxStreak: number;
+  currentStreak: number;
+  heatmapData: HeatmapData[];
 }

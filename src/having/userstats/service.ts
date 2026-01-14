@@ -1,4 +1,4 @@
-// src/userstats/service.ts
+// src/having/userstats/service.ts
 
 import { apiClient } from "@/lib/api/client";
 import type { ApiResponse } from "@/types/api";
@@ -9,6 +9,10 @@ import type {
   UserProgressStats,
   SolvedQuestionDetail,
   PaginatedQuestions,
+  SubmissionHistoryResponse,
+  YearStats,
+  HeatmapData,
+  DailySubmission,
 } from "./types";
 import { USER_STATS_ENDPOINTS, PAGINATION_CONFIG } from "./constants";
 
@@ -18,14 +22,12 @@ class UserStatsService {
    */
   async getUserProgressStats(): Promise<ApiResponse<UserProgressStats>> {
     try {
-      // Fetch all 3 APIs in parallel
       const [userStatsRes, questionsRes, categoriesRes] = await Promise.all([
         apiClient.get<UserStatsResponse>(USER_STATS_ENDPOINTS.USER_STATS),
         apiClient.get<QuestionsMetadataResponse>(USER_STATS_ENDPOINTS.QUESTIONS_METADATA),
         apiClient.get<CategoriesMetadataResponse>(USER_STATS_ENDPOINTS.CATEGORIES_METADATA),
       ]);
 
-      // Check if all API calls succeeded
       if (!userStatsRes.success || !userStatsRes.data) {
         return {
           success: false,
@@ -50,7 +52,6 @@ class UserStatsService {
         };
       }
 
-      // Process the data
       const stats = this.processUserStats(
         userStatsRes.data,
         questionsRes.data,
@@ -79,13 +80,11 @@ class UserStatsService {
     questionsMetadata: QuestionsMetadataResponse,
     categoriesMetadata: CategoriesMetadataResponse
   ): UserProgressStats {
-    // Step 1: Create categoryId -> name map (O(n))
     const categoryMap = new Map<string, string>();
     categoriesMetadata.forEach((cat) => {
       categoryMap.set(cat.id, cat.name);
     });
 
-    // Step 2: Calculate total questions by level
     const totalByLevel = {
       easy: 0,
       medium: 0,
@@ -100,7 +99,6 @@ class UserStatsService {
 
     const totalQuestions = totalByLevel.easy + totalByLevel.medium + totalByLevel.hard;
 
-    // Step 3: Process solved questions into array (O(n))
     const solvedQuestionsList: SolvedQuestionDetail[] = [];
     const solvedByLevel = {
       easy: 0,
@@ -122,18 +120,15 @@ class UserStatsService {
           solvedAt,
         });
 
-        // Count by level
         const levelKey = questionMeta.level.toLowerCase() as 'easy' | 'medium' | 'hard';
         solvedByLevel[levelKey]++;
       }
     });
 
-    // Step 4: Sort by latest first (O(n log n))
     solvedQuestionsList.sort((a, b) => 
       new Date(b.solvedAt).getTime() - new Date(a.solvedAt).getTime()
     );
 
-    // Step 5: Calculate recent activity (last 7 days)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - PAGINATION_CONFIG.MAX_RECENT_DAYS);
 
@@ -141,7 +136,6 @@ class UserStatsService {
       new Date(q.solvedAt) >= sevenDaysAgo
     );
 
-    // Step 6: Calculate percentages
     const progressPercentage = totalQuestions > 0 
       ? (userStats.totalSolved / totalQuestions) * 100 
       : 0;
@@ -182,7 +176,6 @@ class UserStatsService {
     const totalItems = allQuestions.length;
     const totalPages = Math.ceil(totalItems / pageSize);
     
-    // Ensure page is within bounds
     const currentPage = Math.max(1, Math.min(page, totalPages || 1));
     
     const startIndex = (currentPage - 1) * pageSize;
@@ -197,6 +190,169 @@ class UserStatsService {
       pageSize,
       totalItems,
     };
+  }
+
+  /**
+   * Fetch user submission history and process into heatmap data
+   */
+  async getSubmissionHistory(year?: number): Promise<ApiResponse<YearStats>> {
+    try {
+      const response = await apiClient.get<SubmissionHistoryResponse>(
+        USER_STATS_ENDPOINTS.SUBMISSION_HISTORY
+      );
+
+      if (!response.success || !response.data) {
+        return {
+          success: false,
+          error: "Failed to fetch submission history",
+          message: response.message || "Unable to load submission data",
+        };
+      }
+
+      const stats = this.processSubmissionHistory(response.data, year);
+
+      return {
+        success: true,
+        data: stats,
+      };
+    } catch (error) {
+      console.error("Error fetching submission history:", error);
+      return {
+        success: false,
+        error: "Unexpected error",
+        message: "Failed to load submission history",
+      };
+    }
+  }
+
+  /**
+   * Process submission history into heatmap data
+   * ⭐ UPDATED: Now uses 8-level color system based on submission count ranges
+   */
+  private processSubmissionHistory(
+    history: SubmissionHistoryResponse,
+    targetYear?: number
+  ): YearStats {
+    const currentYear = targetYear || new Date().getFullYear();
+    const startDate = new Date(currentYear, 0, 1);
+    const endDate = new Date(currentYear, 11, 31);
+
+    const submissionMap = new Map<string, number>();
+    history.submissionHistory.forEach((day) => {
+      submissionMap.set(day.date, day.count);
+    });
+
+    // ⭐ Calculate level based on submission count ranges
+    const getLevel = (count: number): 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 => {
+      if (count === 0) return 0;
+      if (count <= 2) return 1;   // 1-2 submissions
+      if (count <= 4) return 2;   // 3-4 submissions
+      if (count <= 7) return 3;   // 5-7 submissions
+      if (count <= 10) return 4;  // 8-10 submissions
+      if (count <= 15) return 5;  // 11-15 submissions
+      if (count <= 20) return 6;  // 16-20 submissions
+      return 7;                    // 21+ submissions
+    };
+
+    const heatmapData: HeatmapData[] = [];
+    const currentDate = new Date(startDate);
+    
+    while (currentDate <= endDate) {
+      const dateStr = currentDate.toISOString().split('T')[0];
+      const count = submissionMap.get(dateStr) || 0;
+      const level = getLevel(count);
+
+      heatmapData.push({
+        date: dateStr,
+        count,
+        level,
+      });
+
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    const { maxStreak, currentStreak } = this.calculateStreaks(history.submissionHistory);
+
+    const yearSubmissions = history.submissionHistory
+      .filter((day) => day.date.startsWith(currentYear.toString()))
+      .reduce((sum, day) => sum + day.count, 0);
+
+    const yearDays = history.submissionHistory
+      .filter((day) => day.date.startsWith(currentYear.toString()))
+      .length;
+
+    return {
+      year: currentYear,
+      totalSubmissions: yearSubmissions,
+      totalDays: yearDays,
+      maxStreak,
+      currentStreak,
+      heatmapData,
+    };
+  }
+
+  /**
+   * Calculate max and current streaks
+   */
+  private calculateStreaks(history: DailySubmission[]): {
+    maxStreak: number;
+    currentStreak: number;
+  } {
+    if (history.length === 0) {
+      return { maxStreak: 0, currentStreak: 0 };
+    }
+
+    const sorted = [...history].sort((a, b) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+
+    let currentStreak = 0;
+    let maxStreak = 0;
+    let tempStreak = 0;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    for (let i = 0; i < sorted.length; i++) {
+      const date = new Date(sorted[i].date);
+      date.setHours(0, 0, 0, 0);
+      
+      const expectedDate = new Date(today);
+      expectedDate.setDate(today.getDate() - i);
+      expectedDate.setHours(0, 0, 0, 0);
+
+      if (date.getTime() === expectedDate.getTime()) {
+        currentStreak++;
+      } else {
+        break;
+      }
+    }
+
+    let lastDate: Date | null = null;
+    for (const day of sorted) {
+      const date = new Date(day.date);
+      date.setHours(0, 0, 0, 0);
+
+      if (lastDate === null) {
+        tempStreak = 1;
+      } else {
+        const diffDays = Math.round(
+          (lastDate.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
+        );
+
+        if (diffDays === 1) {
+          tempStreak++;
+        } else {
+          maxStreak = Math.max(maxStreak, tempStreak);
+          tempStreak = 1;
+        }
+      }
+
+      lastDate = date;
+    }
+    maxStreak = Math.max(maxStreak, tempStreak);
+
+    return { maxStreak, currentStreak };
   }
 }
 

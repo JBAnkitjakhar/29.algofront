@@ -1,9 +1,9 @@
-// src/userstats/hooks.ts
+// src/having/userstats/hooks.ts
 
 import { useQuery } from "@tanstack/react-query";
 import { userStatsService } from "./service";
 import { USER_STATS_QUERY_KEYS, PAGINATION_CONFIG } from "./constants";
-import type {PaginatedQuestions } from "./types";
+import type { PaginatedQuestions } from "./types";
 
 /**
  * Main hook to fetch and cache all user progress stats
@@ -20,20 +20,11 @@ export function useUserProgressStats() {
       throw new Error(response.message || "Failed to fetch user progress");
     },
     
-    // ✅ Long stale time - user stats don't change often
     staleTime: 20 * 60 * 1000, // 20 minutes
-    gcTime: 30 * 60 * 1000, // Keep in cache for 30 mins
-    
-    // ✅ Refetch on page refresh
+    gcTime: 30 * 60 * 1000,
     refetchOnMount: true,
-    
-    // ❌ Don't refetch on tab switch
     refetchOnWindowFocus: false,
-    
-    // ❌ Don't refetch on network reconnect
     refetchOnReconnect: false,
-    
-    // ❌ No background polling
     refetchInterval: false,
     refetchIntervalInBackground: false,
   });
@@ -44,10 +35,8 @@ export function useUserProgressStats() {
  * Uses cached stats from useUserProgressStats
  */
 export function usePaginatedSolvedQuestions(page: number = 1) {
-  // First, get all stats (this will be cached)
-  const { data: stats} = useUserProgressStats();
+  const { data: stats } = useUserProgressStats();
 
-  // Then create paginated view
   return useQuery({
     queryKey: USER_STATS_QUERY_KEYS.PAGINATED(page),
     queryFn: (): PaginatedQuestions => {
@@ -67,11 +56,32 @@ export function usePaginatedSolvedQuestions(page: number = 1) {
       );
     },
     
-    // Only run if we have stats
     enabled: !!stats,
-    
-    // ✅ Same caching strategy as parent
     staleTime: 20 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchInterval: false,
+  });
+}
+
+/**
+ * Hook to fetch submission history heatmap
+ * Now properly supports year parameter
+ */
+export function useSubmissionHistory(year?: number) {
+  return useQuery({
+    queryKey: [...USER_STATS_QUERY_KEYS.SUBMISSION_HISTORY, year || new Date().getFullYear()],
+    queryFn: async () => {
+      const response = await userStatsService.getSubmissionHistory(year);
+      if (response.success && response.data) {
+        return response.data;
+      }
+      throw new Error(response.message || "Failed to fetch submission history");
+    },
+    
+    staleTime: 20 * 60 * 1000, // 20 minutes
     gcTime: 30 * 60 * 1000,
     refetchOnMount: true,
     refetchOnWindowFocus: false,

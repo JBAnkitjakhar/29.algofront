@@ -6,6 +6,7 @@ export const USER_STATS_ENDPOINTS = {
   USER_STATS: `${API_BASE_URL}/user/me/stats`,
   QUESTIONS_METADATA: `${API_BASE_URL}/questions/metadata`,
   CATEGORIES_METADATA: `${API_BASE_URL}/categories/metadata`,
+  SUBMISSION_HISTORY: `${API_BASE_URL}/submissions/history`, // ⭐ NEW
 } as const;
 
 export const USER_STATS_QUERY_KEYS = {
@@ -14,9 +15,11 @@ export const USER_STATS_QUERY_KEYS = {
   
   // Paginated questions (includes page number)
   PAGINATED: (page: number) => ['user-stats', 'paginated', page] as const,
+  SUBMISSION_HISTORY: ['user-stats', 'submission-history'] as const, // ⭐ NEW
 } as const;
 
 export const PAGINATION_CONFIG = {
   PAGE_SIZE: 20,
   MAX_RECENT_DAYS: 7,
 } as const;
+
