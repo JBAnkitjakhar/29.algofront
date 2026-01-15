@@ -88,11 +88,7 @@ export function UserApproaches({
     }
   };
 
-  const sortedApproaches = approaches 
-    ? [...approaches].sort((a, b) => 
-        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-      )
-    : [];
+  const sortedApproaches = approaches || [];// already from backend sorted by updatedat desc
 
   if (isLoading) {
     return (
