@@ -19,5 +19,7 @@ export type {
   CourseImageConfig,
   CourseStats,
   TopicsListResponse,
-  DocsByTopicResponse
+  DocsByTopicResponse,
+  ReadStats, 
+  ReadStatsResponse
 } from './types';

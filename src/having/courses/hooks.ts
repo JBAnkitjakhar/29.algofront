@@ -451,3 +451,44 @@ export function useMoveDocument() {
     },
   });
 }
+
+export function useReadStats() {
+  return useQuery({
+    queryKey: COURSES_QUERY_KEYS.READ_STATS,
+    queryFn: async () => {
+      const response = await coursesService.getReadStats();
+      if (response.success && response.data) {
+        return response.data;
+      }
+      throw new Error(response.message || "Failed to fetch read statistics");
+    },
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 15 * 60 * 1000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
+}
+
+export function useToggleReadStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (docId: string) => {
+      const response = await coursesService.toggleReadStatus(docId);
+      if (response.success) {
+        return { docId };
+      }
+      throw new Error(response.message || "Failed to toggle read status");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: COURSES_QUERY_KEYS.READ_STATS,
+      });
+      toast.success("Read status updated");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+}

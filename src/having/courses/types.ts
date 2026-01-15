@@ -114,3 +114,13 @@ export interface DocsByTopicResponse {
 export interface MoveDocumentRequest {
   newTopicId: string;
 }
+
+export interface ReadStats {
+  totalRead: number;
+  readDocs: Record<string, string>; // docId -> readAt timestamp
+}
+
+export interface ReadStatsResponse {
+  data: ReadStats;
+  success: boolean;
+}

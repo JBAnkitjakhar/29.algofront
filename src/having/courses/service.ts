@@ -15,6 +15,8 @@ import type {
   TopicsListResponse,
   DocsByTopicResponse,
   MoveDocumentRequest,
+  ReadStats,
+  ReadStatsResponse,
 } from "./types";
 import { COURSES_ENDPOINTS } from "./constants";
 
@@ -473,6 +475,57 @@ class CoursesService {
       success: false,
       error: "Move failed",
       message: response.data?.message || "Failed to move document",
+    };
+  }
+
+  // Get read stats
+  async getReadStats(): Promise<ApiResponse<ReadStats>> {
+    const response = await apiClient.get<ReadStatsResponse>(
+      COURSES_ENDPOINTS.READ_STATS
+    );
+
+    if (response.success && response.data && response.data.success) {
+      return { success: true, data: response.data.data };
+    }
+
+    if (!response.success) {
+      return {
+        success: false,
+        error: response.error || "Fetch failed",
+        message: response.message || "Failed to fetch read statistics",
+      };
+    }
+
+    return {
+      success: false,
+      error: "Fetch failed",
+      message: "Failed to fetch read statistics",
+    };
+  }
+
+  // Toggle read status
+  async toggleReadStatus(docId: string): Promise<ApiResponse<void>> {
+    const response = await apiClient.put<{
+      success: boolean;
+      message: string;
+    }>(COURSES_ENDPOINTS.TOGGLE_READ(docId), {});
+
+    if (response.success && response.data && response.data.success) {
+      return { success: true, data: undefined };
+    }
+
+    if (!response.success) {
+      return {
+        success: false,
+        error: response.error || "Toggle failed",
+        message: response.message || "Failed to toggle read status",
+      };
+    }
+
+    return {
+      success: false,
+      error: "Toggle failed",
+      message: response.data?.message || "Failed to toggle read status",
     };
   }
 }

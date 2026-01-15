@@ -23,6 +23,10 @@ export const COURSES_ENDPOINTS = {
   GET_DOCS_BY_TOPIC: (topicId: string) => `/courses/topics/${topicId}/docs`,
   GET_DOC: (docId: string) => `/courses/docs/${docId}`,
   STATS: '/courses/stats',
+
+  // Read progress endpoints 
+  READ_STATS: '/courses/read/stats',
+  TOGGLE_READ: (docId: string) => `/courses/docs/${docId}/read`,
 } as const;
 
 export const COURSES_QUERY_KEYS = {
@@ -33,6 +37,8 @@ export const COURSES_QUERY_KEYS = {
   DOC_DETAIL: (docId: string) => ['courses', 'doc', docId] as const,
   IMAGE_CONFIG: ['courses', 'image', 'config'] as const,
   STATS: ['courses', 'stats'] as const,
+   // Read progress keys 
+  READ_STATS: ['courses', 'read', 'stats'] as const,
 } as const;
 
 export const COURSES_VALIDATION = {

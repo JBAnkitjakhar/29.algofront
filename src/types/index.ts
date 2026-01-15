@@ -1,7 +1,7 @@
 // src/types/index.ts 
 export * from './auth';
 export * from './api';
-export * from './admin'; // This now includes user management, category, question, and approach types
+export * from './admin';  
 
 // Re-export commonly used types for convenience
 export type { User, AuthState, AuthResponse} from './auth';
