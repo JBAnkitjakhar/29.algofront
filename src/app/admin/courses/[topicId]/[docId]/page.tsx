@@ -30,6 +30,9 @@ import {
   Highlighter,
   Palette,
   Terminal,
+  Type,
+  Superscript as SuperscriptIcon,
+  Subscript as SubscriptIcon,
 } from "lucide-react";
 import type {
   CreateDocumentRequest,
@@ -37,36 +40,15 @@ import type {
   DocumentFormData,
 } from "@/having/courses";
 
-// Color palettes
 const COLORS = [
-  "#000000",
-  "#FF0000",
-  "#00FF00",
-  "#0000FF",
-  "#FFFF00",
-  "#FF00FF",
-  "#00FFFF",
-  "#FFA500",
-  "#800080",
-  "#FFC0CB",
-  "#808080",
-  "#8B4513",
-  "#000080",
-  "#008000",
-  "#FF6347",
+  "#000000", "#FF0000", "#00FF00", "#0000FF", "#FFFF00",
+  "#FF00FF", "#00FFFF", "#FFA500", "#800080", "#FFC0CB",
+  "#808080", "#8B4513", "#000080", "#008000", "#FF6347",
 ];
 
 const HIGHLIGHT_COLORS = [
-  "#FFEB3B",
-  "#FFC107",
-  "#FF9800",
-  "#FF5722",
-  "#4CAF50",
-  "#00BCD4",
-  "#03A9F4",
-  "#2196F3",
-  "#9C27B0",
-  "#E91E63",
+  "#FFEB3B", "#FFC107", "#FF9800", "#FF5722", "#4CAF50",
+  "#00BCD4", "#03A9F4", "#2196F3", "#9C27B0", "#E91E63",
 ];
 
 const CODE_LANGUAGES = [
@@ -101,9 +83,7 @@ export default function AdminDocumentEditPage() {
 
   const { data: allTopicsData } = useAdminTopics();
   const topic = allTopicsData?.data?.find((t) => t.id === topicId);
-  const { data: documentData, isLoading: isLoadingDoc } = useDocument(
-    isNew ? "" : docId
-  );
+  const { data: documentData, isLoading: isLoadingDoc } = useDocument(isNew ? "" : docId);
   const createDocumentMutation = useCreateDocument();
   const updateDocumentMutation = useUpdateDocument();
   const deleteImageMutation = useDeleteCourseImage();
@@ -122,16 +102,14 @@ export default function AdminDocumentEditPage() {
   const [documentSize, setDocumentSize] = useState(0);
   const [editorInstance, setEditorInstance] = useState<Editor | null>(null);
   const [selectedTextColor, setSelectedTextColor] = useState("#000000");
-  const [selectedHighlightColor, setSelectedHighlightColor] =
-    useState("#FFEB3B");
+  const [selectedHighlightColor, setSelectedHighlightColor] = useState("#FFEB3B");
   const [selectedLanguage, setSelectedLanguage] = useState("javascript");
+  const [selectedFontSize, setSelectedFontSize] = useState(16);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [showTextColorPicker, setShowTextColorPicker] = useState(false);
-  const [showHighlightColorPicker, setShowHighlightColorPicker] =
-    useState(false);
+  const [showHighlightColorPicker, setShowHighlightColorPicker] = useState(false);
 
-  // Calculate document size in real-time
   useEffect(() => {
     if (formData.content) {
       const sizeInBytes = new Blob([formData.content]).size;
@@ -141,7 +119,6 @@ export default function AdminDocumentEditPage() {
     }
   }, [formData.content]);
 
-  // Extract uploaded images from content for deletion UI
   useEffect(() => {
     if (formData.content) {
       const parser = new window.DOMParser();
@@ -156,11 +133,9 @@ export default function AdminDocumentEditPage() {
     }
   }, [formData.content]);
 
-  // Handle click outside to close color pickers
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-
       if (!target.closest(".color-picker-container")) {
         setShowTextColorPicker(false);
         setShowHighlightColorPicker(false);
@@ -175,7 +150,6 @@ export default function AdminDocumentEditPage() {
     }
   }, [showTextColorPicker, showHighlightColorPicker]);
 
-  // Initialize form data when document loads
   useEffect(() => {
     if (isNew && !isInitialized) {
       setFormData({
@@ -214,9 +188,7 @@ export default function AdminDocumentEditPage() {
     }
 
     if (documentSize > 5 * 1024 * 1024) {
-      toast.error(
-        "Document size exceeds 5MB limit. Please reduce content size."
-      );
+      toast.error("Document size exceeds 5MB limit. Please reduce content size.");
       return;
     }
 
@@ -236,9 +208,7 @@ export default function AdminDocumentEditPage() {
       };
 
       if (isNew) {
-        await createDocumentMutation.mutateAsync(
-          dataToSave as CreateDocumentRequest
-        );
+        await createDocumentMutation.mutateAsync(dataToSave as CreateDocumentRequest);
         toast.success("Document created successfully");
         router.push(`/admin/courses/${topicId}`);
       } else {
@@ -294,11 +264,7 @@ export default function AdminDocumentEditPage() {
         const result = await uploadImageMutation.mutateAsync(file);
 
         if (result && editorInstance) {
-          editorInstance
-            .chain()
-            .focus()
-            .setImage({ src: result.secure_url })
-            .run();
+          editorInstance.chain().focus().setImage({ src: result.secure_url }).run();
           toast.success("Image inserted successfully");
         }
       } catch (error) {
@@ -314,11 +280,7 @@ export default function AdminDocumentEditPage() {
 
   const insertCodeBlock = () => {
     if (editorInstance) {
-      editorInstance
-        .chain()
-        .focus()
-        .setCodeBlock({ language: selectedLanguage })
-        .run();
+      editorInstance.chain().focus().setCodeBlock({ language: selectedLanguage }).run();
     }
   };
 
@@ -345,10 +307,9 @@ export default function AdminDocumentEditPage() {
 
   return (
     <div className="min-h-screen bg-[#1A1A1A] flex">
-      {/* Fixed Left Sidebar - Editor Tools */}
+      {/* Left Sidebar */}
       <div className="w-64 border-r border-gray-700 bg-[#262626] flex-shrink-0">
         <div className="sticky top-0 p-4 space-y-4 max-h-screen overflow-y-auto">
-          {/* Back Button */}
           <button
             onClick={() => router.push(`/admin/courses/${topicId}`)}
             className="flex items-center text-gray-300 hover:text-white font-medium transition-colors w-full"
@@ -357,28 +318,20 @@ export default function AdminDocumentEditPage() {
             Back to Topic
           </button>
 
-          {/* Document Info */}
           <div className="pb-4 border-b border-gray-700">
             <h2 className="text-lg font-bold text-white">
               {isNew ? "Create Document" : "Edit Document"}
             </h2>
-            {topic && (
-              <p className="text-sm text-gray-400 mt-1">Topic: {topic.name}</p>
-            )}
+            {topic && <p className="text-sm text-gray-400 mt-1">Topic: {topic.name}</p>}
           </div>
 
-          {/* Editor Tools */}
           <div className="space-y-4">
             {/* Text Style */}
             <div className="space-y-2">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                Text Style
-              </p>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Text Style</p>
               <div className="flex flex-col gap-1">
                 <button
-                  onClick={() =>
-                    editorInstance?.chain().focus().toggleBold().run()
-                  }
+                  onClick={() => editorInstance?.chain().focus().toggleBold().run()}
                   className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
                     editorInstance?.isActive("bold")
                       ? "bg-blue-900/30 text-blue-400 border border-blue-500/30"
@@ -390,9 +343,7 @@ export default function AdminDocumentEditPage() {
                   <span>Bold</span>
                 </button>
                 <button
-                  onClick={() =>
-                    editorInstance?.chain().focus().toggleItalic().run()
-                  }
+                  onClick={() => editorInstance?.chain().focus().toggleItalic().run()}
                   className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
                     editorInstance?.isActive("italic")
                       ? "bg-blue-900/30 text-blue-400 border border-blue-500/30"
@@ -404,9 +355,7 @@ export default function AdminDocumentEditPage() {
                   <span>Italic</span>
                 </button>
                 <button
-                  onClick={() =>
-                    editorInstance?.chain().focus().toggleCode().run()
-                  }
+                  onClick={() => editorInstance?.chain().focus().toggleCode().run()}
                   className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
                     editorInstance?.isActive("code")
                       ? "bg-blue-900/30 text-blue-400 border border-blue-500/30"
@@ -420,13 +369,79 @@ export default function AdminDocumentEditPage() {
               </div>
             </div>
 
+            {/* Font Size */}
+            <div className="space-y-2 pt-2 border-t border-gray-700">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Text Size</p>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Type className="w-4 h-4 text-gray-400" />
+                  <span className="text-xs text-gray-400">{selectedFontSize}px</span>
+                </div>
+                <input
+                  type="range"
+                  min="10"
+                  max="24"
+                  value={selectedFontSize}
+                  onChange={(e) => {
+                    const size = parseInt(e.target.value);
+                    setSelectedFontSize(size);
+                    if (editorInstance) {
+                      editorInstance.chain().focus().setFontSize(`${size}px`).run();
+                    }
+                  }}
+                  className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                />
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span>10px</span>
+                  <span>24px</span>
+                </div>
+                <button
+                  onClick={() => {
+                    setSelectedFontSize(16);
+                    editorInstance?.chain().focus().unsetFontSize().run();
+                  }}
+                  className="w-full px-3 py-1.5 text-xs rounded-lg hover:bg-gray-700 text-gray-400 border border-gray-700 transition-colors"
+                >
+                  Reset to Default
+                </button>
+              </div>
+            </div>
+
+            {/* Superscript/Subscript */}
+            <div className="space-y-2 pt-2 border-t border-gray-700">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Script Style</p>
+              <div className="flex flex-col gap-1">
+                <button
+                  onClick={() => editorInstance?.chain().focus().toggleSuperscript().run()}
+                  className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
+                    editorInstance?.isActive("superscript")
+                      ? "bg-blue-900/30 text-blue-400 border border-blue-500/30"
+                      : "hover:bg-gray-700 text-gray-300 border border-gray-700"
+                  }`}
+                  title="Superscript (10⁴)"
+                >
+                  <SuperscriptIcon className="w-4 h-4" />
+                  <span>Superscript</span>
+                </button>
+                <button
+                  onClick={() => editorInstance?.chain().focus().toggleSubscript().run()}
+                  className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
+                    editorInstance?.isActive("subscript")
+                      ? "bg-blue-900/30 text-blue-400 border border-blue-500/30"
+                      : "hover:bg-gray-700 text-gray-300 border border-gray-700"
+                  }`}
+                  title="Subscript (H₂O)"
+                >
+                  <SubscriptIcon className="w-4 h-4" />
+                  <span>Subscript</span>
+                </button>
+              </div>
+            </div>
+
             {/* Colors */}
             <div className="space-y-2 pt-2 border-t border-gray-700">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                Colors
-              </p>
-
-              {/* Text Color */}
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Colors</p>
+              
               <div className="space-y-1">
                 <label className="text-xs text-gray-400">Text Color</label>
                 <div className="relative color-picker-container">
@@ -436,53 +451,34 @@ export default function AdminDocumentEditPage() {
                   >
                     <Palette className="w-4 h-4" />
                     <span className="flex-1 text-left">Select Color</span>
-                    <div
-                      className="w-6 h-6 rounded border border-gray-600"
-                      style={{ backgroundColor: selectedTextColor }}
-                    />
+                    <div className="w-6 h-6 rounded border border-gray-600" style={{ backgroundColor: selectedTextColor }} />
                   </button>
 
                   {showTextColorPicker && (
                     <>
-                      <div
-                        className="fixed inset-0 z-10"
-                        onClick={() => setShowTextColorPicker(false)}
-                      />
+                      <div className="fixed inset-0 z-10" onClick={() => setShowTextColorPicker(false)} />
                       <div className="absolute left-0 top-full mt-1 p-3 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-20 w-full">
                         <div className="mb-3">
-                          <label className="block text-xs font-medium text-gray-300 mb-1">
-                            Pick Custom Color
-                          </label>
+                          <label className="block text-xs font-medium text-gray-300 mb-1">Pick Custom Color</label>
                           <input
                             type="color"
                             value={selectedTextColor}
                             onChange={(e) => {
                               const color = e.target.value;
                               setSelectedTextColor(color);
-                              editorInstance
-                                ?.chain()
-                                .focus()
-                                .setColor(color)
-                                .run();
+                              editorInstance?.chain().focus().setColor(color).run();
                             }}
                             className="w-full h-10 rounded border border-gray-600 cursor-pointer bg-gray-700"
                           />
                         </div>
-
                         <div>
-                          <label className="block text-xs font-medium text-gray-300 mb-1">
-                            Quick Colors
-                          </label>
+                          <label className="block text-xs font-medium text-gray-300 mb-1">Quick Colors</label>
                           <div className="grid grid-cols-5 gap-1">
                             {COLORS.map((color) => (
                               <button
                                 key={color}
                                 onClick={() => {
-                                  editorInstance
-                                    ?.chain()
-                                    .focus()
-                                    .setColor(color)
-                                    .run();
+                                  editorInstance?.chain().focus().setColor(color).run();
                                   setSelectedTextColor(color);
                                   setShowTextColorPicker(false);
                                 }}
@@ -499,65 +495,43 @@ export default function AdminDocumentEditPage() {
                 </div>
               </div>
 
-              {/* Highlight Color */}
               <div className="space-y-1">
                 <label className="text-xs text-gray-400">Highlight</label>
                 <div className="relative color-picker-container">
                   <button
-                    onClick={() =>
-                      setShowHighlightColorPicker(!showHighlightColorPicker)
-                    }
+                    onClick={() => setShowHighlightColorPicker(!showHighlightColorPicker)}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-gray-700 border border-gray-700 transition-colors text-gray-300"
                   >
                     <Highlighter className="w-4 h-4" />
                     <span className="flex-1 text-left">Select Color</span>
-                    <div
-                      className="w-6 h-6 rounded border border-gray-600"
-                      style={{ backgroundColor: selectedHighlightColor }}
-                    />
+                    <div className="w-6 h-6 rounded border border-gray-600" style={{ backgroundColor: selectedHighlightColor }} />
                   </button>
 
                   {showHighlightColorPicker && (
                     <>
-                      <div
-                        className="fixed inset-0 z-10"
-                        onClick={() => setShowHighlightColorPicker(false)}
-                      />
+                      <div className="fixed inset-0 z-10" onClick={() => setShowHighlightColorPicker(false)} />
                       <div className="absolute left-0 top-full mt-1 p-3 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-20 w-full">
                         <div className="mb-3">
-                          <label className="block text-xs font-medium text-gray-300 mb-1">
-                            Pick Custom Color
-                          </label>
+                          <label className="block text-xs font-medium text-gray-300 mb-1">Pick Custom Color</label>
                           <input
                             type="color"
                             value={selectedHighlightColor}
                             onChange={(e) => {
                               const color = e.target.value;
                               setSelectedHighlightColor(color);
-                              editorInstance
-                                ?.chain()
-                                .focus()
-                                .toggleHighlight({ color })
-                                .run();
+                              editorInstance?.chain().focus().toggleHighlight({ color }).run();
                             }}
                             className="w-full h-10 rounded border border-gray-600 cursor-pointer bg-gray-700"
                           />
                         </div>
-
                         <div>
-                          <label className="block text-xs font-medium text-gray-300 mb-1">
-                            Quick Colors
-                          </label>
+                          <label className="block text-xs font-medium text-gray-300 mb-1">Quick Colors</label>
                           <div className="grid grid-cols-5 gap-1">
                             {HIGHLIGHT_COLORS.map((color) => (
                               <button
                                 key={color}
                                 onClick={() => {
-                                  editorInstance
-                                    ?.chain()
-                                    .focus()
-                                    .toggleHighlight({ color })
-                                    .run();
+                                  editorInstance?.chain().focus().toggleHighlight({ color }).run();
                                   setSelectedHighlightColor(color);
                                   setShowHighlightColorPicker(false);
                                 }}
@@ -577,9 +551,7 @@ export default function AdminDocumentEditPage() {
 
             {/* Image Upload */}
             <div className="space-y-2 pt-2 border-t border-gray-700">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                Media
-              </p>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Media</p>
               <button
                 onClick={handleImageUpload}
                 disabled={isUploadingImage}
@@ -602,9 +574,7 @@ export default function AdminDocumentEditPage() {
 
             {/* Code Block */}
             <div className="space-y-2 pt-2 border-t border-gray-700">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                Code Block
-              </p>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Code Block</p>
               <div className="space-y-2">
                 <select
                   value={selectedLanguage}
@@ -612,9 +582,7 @@ export default function AdminDocumentEditPage() {
                   className="w-full px-3 py-2 text-sm border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-800 text-white"
                 >
                   {CODE_LANGUAGES.map((lang) => (
-                    <option key={lang.value} value={lang.value}>
-                      {lang.label}
-                    </option>
+                    <option key={lang.value} value={lang.value}>{lang.label}</option>
                   ))}
                 </select>
                 <button
@@ -633,9 +601,7 @@ export default function AdminDocumentEditPage() {
 
             {/* History */}
             <div className="space-y-2 pt-2 border-t border-gray-700">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                History
-              </p>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">History</p>
               <div className="flex flex-col gap-1">
                 <button
                   onClick={() => editorInstance?.chain().focus().undo().run()}
@@ -659,36 +625,28 @@ export default function AdminDocumentEditPage() {
         </div>
       </div>
 
-      {/* Main Content Area */}
+      {/* Main Content */}
       <div className="flex-1 max-w-5xl mx-auto px-6 py-8 overflow-y-auto">
         <div className="space-y-6">
-          {/* Title and Display Order */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Document Title
-              </label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Document Title</label>
               <input
                 type="text"
                 value={formData.title}
-                onChange={(e) =>
-                  setFormData({ ...formData, title: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 placeholder="Enter document title"
                 className="w-full px-3 py-2 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-800 text-white placeholder-gray-500"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Display Order
-              </label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Display Order</label>
               <input
                 type="number"
                 value={formData.displayOrder || 1}
                 onChange={(e) => {
-                  const value =
-                    e.target.value === "" ? 1 : parseInt(e.target.value, 10);
+                  const value = e.target.value === "" ? 1 : parseInt(e.target.value, 10);
                   if (!isNaN(value) && value > 0) {
                     setFormData({ ...formData, displayOrder: value });
                   }
@@ -700,11 +658,8 @@ export default function AdminDocumentEditPage() {
             </div>
           </div>
 
-          {/* Editor */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Content
-            </label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Content</label>
             {isInitialized && (
               <CourseEditor
                 content={formData.content}
@@ -715,12 +670,9 @@ export default function AdminDocumentEditPage() {
             )}
           </div>
 
-          {/* Image Management */}
           {uploadedImages.length > 0 && (
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Uploaded Images
-              </label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Uploaded Images</label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {uploadedImages.map((url, index) => (
                   <div key={index} className="relative group">
@@ -742,18 +694,16 @@ export default function AdminDocumentEditPage() {
                 ))}
               </div>
               <p className="mt-2 text-sm text-gray-500">
-                Note: Removing images here will also remove them from the
-                document content.
+                Note: Removing images here will also remove them from the document content.
               </p>
             </div>
           )}
         </div>
       </div>
 
-      {/* Fixed Right Sidebar - Actions & Info */}
+      {/* Right Sidebar */}
       <div className="w-72 border-l border-gray-700 bg-[#262626] flex-shrink-0">
         <div className="sticky top-0 p-4 space-y-4 max-h-screen overflow-y-auto">
-          {/* Action Buttons */}
           <div className="space-y-2">
             <button
               onClick={handleSave}
@@ -780,7 +730,6 @@ export default function AdminDocumentEditPage() {
             </button>
           </div>
 
-          {/* Document Size */}
           <div
             className={`p-4 rounded-lg border-2 transition-all ${
               isOverSize
@@ -817,9 +766,7 @@ export default function AdminDocumentEditPage() {
                 >
                   <div className="flex justify-between">
                     <span>Current:</span>
-                    <span className="font-semibold">
-                      {formatSize(documentSize)}
-                    </span>
+                    <span className="font-semibold">{formatSize(documentSize)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Max Limit:</span>
@@ -835,19 +782,14 @@ export default function AdminDocumentEditPage() {
                           : "bg-blue-500"
                       }`}
                       style={{
-                        width: `${Math.min(
-                          (documentSize / (5 * 1024 * 1024)) * 100,
-                          100
-                        )}%`,
+                        width: `${Math.min((documentSize / (5 * 1024 * 1024)) * 100, 100)}%`,
                       }}
                     />
                   </div>
                 </div>
                 {isOverSize && (
                   <div className="mt-2 pt-2 border-t border-red-500/30">
-                    <p className="text-xs font-semibold text-red-400">
-                      ⚠️ Size limit exceeded!
-                    </p>
+                    <p className="text-xs font-semibold text-red-400">⚠️ Size limit exceeded!</p>
                     <p className="text-xs text-red-300 mt-1">
                       Please reduce content or compress images before saving.
                     </p>
@@ -855,19 +797,14 @@ export default function AdminDocumentEditPage() {
                 )}
                 {isWarningSize && !isOverSize && (
                   <div className="mt-2 pt-2 border-t border-yellow-500/30">
-                    <p className="text-xs font-semibold text-yellow-400">
-                      ⚠️ Approaching limit
-                    </p>
-                    <p className="text-xs text-yellow-300 mt-1">
-                      Consider optimizing content size.
-                    </p>
+                    <p className="text-xs font-semibold text-yellow-400">⚠️ Approaching limit</p>
+                    <p className="text-xs text-yellow-300 mt-1">Consider optimizing content size.</p>
                   </div>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Quick Help */}
           <div className="space-y-3 text-sm">
             <div className="flex items-center space-x-2 text-gray-300 font-medium">
               <HelpCircleIcon className="w-5 h-5" />
@@ -875,13 +812,29 @@ export default function AdminDocumentEditPage() {
             </div>
 
             <div className="p-3 bg-gray-800 rounded-lg border border-gray-700">
-              <h3 className="font-semibold text-white mb-1">
-                📝 Formatting
-              </h3>
+              <h3 className="font-semibold text-white mb-1">📝 Formatting</h3>
               <ul className="space-y-1 text-xs text-gray-400">
                 <li>• Use left toolbar for styles</li>
                 <li>• Select custom colors</li>
                 <li>• Bold, italic, inline code</li>
+              </ul>
+            </div>
+
+            <div className="p-3 bg-gray-800 rounded-lg border border-gray-700">
+              <h3 className="font-semibold text-white mb-1">🔤 Text Size</h3>
+              <ul className="space-y-1 text-xs text-gray-400">
+                <li>• Drag slider: 10-24px</li>
+                <li>• Select text first</li>
+                <li>• Reset to default anytime</li>
+              </ul>
+            </div>
+
+            <div className="p-3 bg-gray-800 rounded-lg border border-gray-700">
+              <h3 className="font-semibold text-white mb-1">📐 Math & Science</h3>
+              <ul className="space-y-1 text-xs text-gray-400">
+                <li>• Superscript: 10⁴</li>
+                <li>• Subscript: H₂O</li>
+                <li>• Select text, then apply</li>
               </ul>
             </div>
 
@@ -895,9 +848,7 @@ export default function AdminDocumentEditPage() {
             </div>
 
             <div className="p-3 bg-gray-800 rounded-lg border border-gray-700">
-              <h3 className="font-semibold text-white mb-1">
-                💻 Code Blocks
-              </h3>
+              <h3 className="font-semibold text-white mb-1">💻 Code Blocks</h3>
               <ul className="space-y-1 text-xs text-gray-400">
                 <li>• Select language first</li>
                 <li>• Syntax highlighting auto</li>

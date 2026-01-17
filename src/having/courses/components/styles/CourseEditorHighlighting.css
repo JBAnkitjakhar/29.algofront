@@ -2,7 +2,7 @@
 
 /* Code block container in the editor */
 .ProseMirror pre {
-  background: #2b2d3a !important; /* Lighter dark background like in your image */
+  background: #2b2d3a !important;
   color: #d4d4d4 !important;
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'Courier New', monospace;
   font-size: 14px;
@@ -21,7 +21,7 @@
   padding: 0;
 }
 
-/* Inline code */
+/* ✅ FIXED - Inline code with fixed height and margin */
 .ProseMirror code {
   background-color: #e0dada;
   color: #07091f;
@@ -29,6 +29,64 @@
   border-radius: 3px;
   font-size: 0.9em;
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+  display: inline-block;
+  min-height: 20px; /* ✅ Fixed minimum height */
+  line-height: 1.4;
+  vertical-align: middle;
+  margin: 2px 2px; /* ✅ Small margin to prevent merging */
+}
+
+/* ✅ When code contains superscript - increase height */
+.ProseMirror code:has(sup),
+.ProseMirror code:has(.tiptap-superscript) {
+  min-height: 24px; /* ✅ Taller for superscript */
+  line-height: 1.6;
+}
+
+/* ✅ When code contains subscript - increase height */
+.ProseMirror code:has(sub),
+.ProseMirror code:has(.tiptap-subscript) {
+  min-height: 24px; /* ✅ Taller for subscript */
+  line-height: 1.6;
+}
+
+/* ✅ When code contains both - even taller */
+.ProseMirror code:has(sup):has(sub),
+.ProseMirror code:has(.tiptap-superscript):has(.tiptap-subscript) {
+  min-height: 26px; /* ✅ Tallest for both */
+  line-height: 1.8;
+}
+
+/* ✅ Superscript styling */
+.ProseMirror sup,
+.ProseMirror .tiptap-superscript {
+  vertical-align: super;
+  font-size: 0.75em;
+  line-height: 0;
+}
+
+/* ✅ Subscript styling */
+.ProseMirror sub,
+.ProseMirror .tiptap-subscript {
+  vertical-align: sub;
+  font-size: 0.75em;
+  line-height: 0;
+}
+
+/* ✅ Superscript inside code */
+.ProseMirror code sup,
+.ProseMirror code .tiptap-superscript {
+  position: relative;
+  top: -0.4em;
+  font-size: 0.7em;
+}
+
+/* ✅ Subscript inside code */
+.ProseMirror code sub,
+.ProseMirror code .tiptap-subscript {
+  position: relative;
+  bottom: -0.25em;
+  font-size: 0.7em;
 }
 
 /* CENTER IMAGES - Images should be centered and on their own line */
@@ -215,7 +273,7 @@
 
 /* Additional editor-specific styles */
 .ProseMirror pre.hljs {
-  background: #2b2d3a !important; /* Ensure consistent background */
+  background: #2b2d3a !important;
 }
 
 /* Code block with line numbers (optional) */

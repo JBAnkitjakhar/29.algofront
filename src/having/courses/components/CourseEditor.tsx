@@ -1,4 +1,4 @@
-// src/having/courses/components/CourseEditor.tsx - FIXED
+// src/having/courses/components/CourseEditor.tsx
 
 'use client';
 
@@ -10,6 +10,10 @@ import Highlight from '@tiptap/extension-highlight';
 import TextAlign from '@tiptap/extension-text-align';
 import Image from '@tiptap/extension-image';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
+import Superscript from '@tiptap/extension-superscript';
+import Subscript from '@tiptap/extension-subscript';
+import { FontSize } from '../extensions/FontSize';
+import { CustomCode } from '../extensions/CustomCode'; // ✅ NEW
 import { createLowlight } from 'lowlight';
 
 // Import individual languages for better highlighting
@@ -27,7 +31,7 @@ import rust from 'highlight.js/lib/languages/rust';
 import kotlin from 'highlight.js/lib/languages/kotlin';
 import swift from 'highlight.js/lib/languages/swift';
 import sql from 'highlight.js/lib/languages/sql';
-import xml from 'highlight.js/lib/languages/xml'; // for HTML
+import xml from 'highlight.js/lib/languages/xml';
 import css from 'highlight.js/lib/languages/css';
 import json from 'highlight.js/lib/languages/json';
 import bash from 'highlight.js/lib/languages/bash';
@@ -37,7 +41,7 @@ import markdown from 'highlight.js/lib/languages/markdown';
 import Placeholder from '@tiptap/extension-placeholder';
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import './styles/CourseEditorHighlighting.css'; // ✅ ADD THIS
+import './styles/CourseEditorHighlighting.css';
 
 // Create lowlight instance with all languages
 const lowlight = createLowlight();
@@ -101,7 +105,9 @@ export default function CourseEditor({
     extensions: [
       StarterKit.configure({
         codeBlock: false,
+        code: false, // ✅ CHANGED: Disable default code
       }),
+      CustomCode, // ✅ NEW: Use custom code that allows super/sub
       TextStyle,
       Color,
       Highlight.configure({ 
@@ -123,11 +129,22 @@ export default function CourseEditor({
         },
         defaultLanguage: 'javascript',
       }),
+      Superscript.configure({
+        HTMLAttributes: {
+          class: 'tiptap-superscript', // ✅ Add class for styling
+        },
+      }),
+      Subscript.configure({
+        HTMLAttributes: {
+          class: 'tiptap-subscript', // ✅ Add class for styling
+        },
+      }),
+      FontSize,
       Placeholder.configure({
         placeholder,
       }),
     ],
-    content: '', // ✅ CHANGED: Start with empty string
+    content: '',
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
     },
@@ -146,12 +163,11 @@ export default function CourseEditor({
     }
   }, [editor, onEditorReady]);
 
-  // ✅ FIXED: Use setTimeout pattern like questions/solutions
   useEffect(() => {
     if (isMounted && editor && content !== editor.getHTML()) {
       const timer = setTimeout(() => {
         editor.commands.setContent(content || '', { emitUpdate: false });
-      }, 50); // ✅ CHANGED: 10ms -> 50ms for consistency
+      }, 50);
       return () => clearTimeout(timer);
     }
   }, [content, editor, isMounted]);
