@@ -8,6 +8,8 @@ export interface Topic {
   iconUrl?: string | null;
   isPublic: boolean;
   docsCount: number;
+  videoLinks?: string[]; 
+  videoCount?: number;  
   createdByName: string;
   createdById: string;
   createdAt: string;
@@ -37,6 +39,7 @@ export interface CreateTopicRequest {
   displayOrder: number;
   iconUrl?: string;
   isPublic: boolean;
+  videoLinks?: string[]; 
 }
 
 export interface UpdateTopicRequest {
@@ -45,6 +48,7 @@ export interface UpdateTopicRequest {
   displayOrder?: number;
   iconUrl?: string;
   isPublic?: boolean;
+  videoLinks?: string[];  
 }
 
 // DOCUMENT REQUEST TYPES
@@ -123,4 +127,9 @@ export interface ReadStats {
 export interface ReadStatsResponse {
   data: ReadStats;
   success: boolean;
+}
+
+// ✅ ADD NEW TYPE for video link management
+export interface UpdateVideoLinksRequest {
+  videoLinks: string[];
 }

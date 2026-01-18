@@ -51,7 +51,7 @@ class CoursesService {
   //update topic
   async updateTopic(
     topicId: string,
-    data: UpdateTopicRequest
+    data: UpdateTopicRequest,
   ): Promise<ApiResponse<Topic>> {
     const response = await apiClient.put<{
       data: Topic;
@@ -109,17 +109,17 @@ class CoursesService {
 
   //delete topic
   async deleteTopic(
-    topicId: string
+    topicId: string,
   ): Promise<ApiResponse<{ success: boolean; message: string }>> {
     return await apiClient.delete<{ success: boolean; message: string }>(
-      COURSES_ENDPOINTS.DELETE_TOPIC(topicId)
+      COURSES_ENDPOINTS.DELETE_TOPIC(topicId),
     );
   }
 
   // all topics for admin
   async getAllTopicsAdmin(): Promise<ApiResponse<TopicsListResponse>> {
     const response = await apiClient.get<TopicsListResponse>(
-      COURSES_ENDPOINTS.ALL_TOPICS_ADMIN
+      COURSES_ENDPOINTS.ALL_TOPICS_ADMIN,
     );
 
     if (response.success && response.data) {
@@ -145,7 +145,7 @@ class CoursesService {
 
   //create doc
   async createDocument(
-    data: CreateDocumentRequest
+    data: CreateDocumentRequest,
   ): Promise<ApiResponse<Document>> {
     const response = await apiClient.post<{
       data: Document;
@@ -175,7 +175,7 @@ class CoursesService {
   //update doc
   async updateDocument(
     docId: string,
-    data: UpdateDocumentRequest
+    data: UpdateDocumentRequest,
   ): Promise<ApiResponse<Document>> {
     // Add debugging
     // console.log("🔍 updateDocument called with:", { docId, data });
@@ -217,16 +217,16 @@ class CoursesService {
   }
   //delete doc
   async deleteDocument(
-    docId: string
+    docId: string,
   ): Promise<ApiResponse<{ success: boolean; message: string }>> {
     return await apiClient.delete<{ success: boolean; message: string }>(
-      COURSES_ENDPOINTS.DELETE_DOC(docId)
+      COURSES_ENDPOINTS.DELETE_DOC(docId),
     );
   }
 
   //upload image
   async uploadImage(
-    file: File
+    file: File,
   ): Promise<ApiResponse<CourseImageUploadResponse>> {
     const formData = new FormData();
     formData.append("image", file);
@@ -260,7 +260,7 @@ class CoursesService {
 
   //delete image
   async deleteImage(
-    imageUrl: string
+    imageUrl: string,
   ): Promise<ApiResponse<{ result: string }>> {
     const response = await apiClient.delete<{
       success: boolean;
@@ -268,8 +268,8 @@ class CoursesService {
       message: string;
     }>(
       `${COURSES_ENDPOINTS.DELETE_IMAGE}?imageUrl=${encodeURIComponent(
-        imageUrl
-      )}`
+        imageUrl,
+      )}`,
     );
 
     if (response.success && response.data && response.data.success) {
@@ -321,7 +321,7 @@ class CoursesService {
   //get public topics
   async getPublicTopics(): Promise<ApiResponse<TopicsListResponse>> {
     const response = await apiClient.get<TopicsListResponse>(
-      COURSES_ENDPOINTS.PUBLIC_TOPICS
+      COURSES_ENDPOINTS.PUBLIC_TOPICS,
     );
 
     if (response.success && response.data) {
@@ -347,7 +347,7 @@ class CoursesService {
 
   async getTopicById(topicId: string): Promise<ApiResponse<Topic>> {
     const response = await apiClient.get<{ data: Topic; success: boolean }>(
-      COURSES_ENDPOINTS.GET_TOPIC(topicId)
+      COURSES_ENDPOINTS.GET_TOPIC(topicId),
     );
 
     if (response.success && response.data && response.data.success) {
@@ -371,10 +371,10 @@ class CoursesService {
 
   //get docs by topic
   async getDocsByTopic(
-    topicId: string
+    topicId: string,
   ): Promise<ApiResponse<DocsByTopicResponse>> {
     const response = await apiClient.get<DocsByTopicResponse>(
-      COURSES_ENDPOINTS.GET_DOCS_BY_TOPIC(topicId)
+      COURSES_ENDPOINTS.GET_DOCS_BY_TOPIC(topicId),
     );
 
     if (response.success && response.data) {
@@ -401,7 +401,7 @@ class CoursesService {
   //get doc by id
   async getDocumentById(docId: string): Promise<ApiResponse<Document>> {
     const response = await apiClient.get<{ data: Document; success: boolean }>(
-      COURSES_ENDPOINTS.GET_DOC(docId)
+      COURSES_ENDPOINTS.GET_DOC(docId),
     );
 
     if (response.success && response.data && response.data.success) {
@@ -451,7 +451,7 @@ class CoursesService {
 
   async moveDocument(
     docId: string,
-    data: MoveDocumentRequest
+    data: MoveDocumentRequest,
   ): Promise<ApiResponse<Document>> {
     const response = await apiClient.put<{
       data: Document;
@@ -481,7 +481,7 @@ class CoursesService {
   // Get read stats
   async getReadStats(): Promise<ApiResponse<ReadStats>> {
     const response = await apiClient.get<ReadStatsResponse>(
-      COURSES_ENDPOINTS.READ_STATS
+      COURSES_ENDPOINTS.READ_STATS,
     );
 
     if (response.success && response.data && response.data.success) {
@@ -526,6 +526,35 @@ class CoursesService {
       success: false,
       error: "Toggle failed",
       message: response.data?.message || "Failed to toggle read status",
+    };
+  }
+
+  async updateTopicVideos(
+    topicId: string,
+    videoLinks: string[],
+  ): Promise<ApiResponse<Topic>> {
+    const response = await apiClient.put<{
+      data: Topic;
+      success: boolean;
+      message: string;
+    }>(COURSES_ENDPOINTS.UPDATE_VIDEOS(topicId), { videoLinks }); // ✅ Use new endpoint
+
+    if (response.success && response.data && response.data.success) {
+      return { success: true, data: response.data.data };
+    }
+
+    if (!response.success) {
+      return {
+        success: false,
+        error: response.error || "Update failed",
+        message: response.message || "Failed to update video links",
+      };
+    }
+
+    return {
+      success: false,
+      error: "Update failed",
+      message: response.data?.message || "Failed to update video links",
     };
   }
 }

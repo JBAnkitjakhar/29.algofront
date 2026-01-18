@@ -1,18 +1,18 @@
 // src/app/admin/courses/page.tsx
 
-'use client';
+"use client";
 
-import { useState } from 'react';
-import AdminLayout from '@/components/admin/AdminLayout';
-import { 
-  useAdminTopics, 
-  useCreateTopic, 
-  useUpdateTopic, 
+import { useState } from "react";
+import AdminLayout from "@/components/admin/AdminLayout";
+import {
+  useAdminTopics,
+  useCreateTopic,
+  useUpdateTopic,
   useDeleteTopic,
   useToggleTopicVisibility,
-  useCourseStats 
-} from '@/having/courses/hooks';
-import { 
+  useCourseStats,
+} from "@/having/courses/hooks";
+import {
   AcademicCapIcon,
   PlusIcon,
   PencilIcon,
@@ -20,22 +20,22 @@ import {
   DocumentTextIcon,
   ChevronRightIcon,
   EyeIcon,
-  EyeSlashIcon
-} from '@heroicons/react/24/outline';
-import Link from 'next/link';
-import type { Topic, CreateTopicRequest } from '@/having/courses';
-import Image from 'next/image';
-import { Loader2Icon } from 'lucide-react';
+  EyeSlashIcon,
+} from "@heroicons/react/24/outline";
+import Link from "next/link";
+import type { Topic, CreateTopicRequest } from "@/having/courses";
+import Image from "next/image";
+import { Loader2Icon } from "lucide-react";
 
 const isConfiguredDomain = (url: string): boolean => {
   try {
     const hostname = new URL(url).hostname;
     const configuredDomains = [
-      'lh3.googleusercontent.com',
-      'avatars.githubusercontent.com',
-      'res.cloudinary.com',
+      "lh3.googleusercontent.com",
+      "avatars.githubusercontent.com",
+      "res.cloudinary.com",
     ];
-    return configuredDomains.some(domain => hostname.includes(domain));
+    return configuredDomains.some((domain) => hostname.includes(domain));
   } catch {
     return false;
   }
@@ -48,16 +48,16 @@ export default function AdminCoursesPage() {
   const updateTopicMutation = useUpdateTopic();
   const deleteTopicMutation = useDeleteTopic();
   const toggleVisibilityMutation = useToggleTopicVisibility();
-  
+
   const [isCreating, setIsCreating] = useState(false);
   const [editingTopic, setEditingTopic] = useState<Topic | null>(null);
   const [togglingTopic, setTogglingTopic] = useState<Topic | null>(null);
   const [formData, setFormData] = useState<CreateTopicRequest>({
-    name: '',
-    description: '',
+    name: "",
+    description: "",
     displayOrder: 1,
-    iconUrl: '',
-    isPublic: true
+    iconUrl: "",
+    isPublic: true,
   });
 
   const topics = topicsData?.data || [];
@@ -66,20 +66,20 @@ export default function AdminCoursesPage() {
     if (editingTopic) {
       await updateTopicMutation.mutateAsync({
         topicId: editingTopic.id,
-        data: formData
+        data: formData,
       });
       setEditingTopic(null);
     } else {
       await createTopicMutation.mutateAsync(formData);
     }
-    
+
     setIsCreating(false);
     setFormData({
-      name: '',
-      description: '',
+      name: "",
+      description: "",
       displayOrder: 1,
-      iconUrl: '',
-      isPublic: true
+      iconUrl: "",
+      isPublic: true,
     });
   };
 
@@ -89,21 +89,25 @@ export default function AdminCoursesPage() {
       name: topic.name,
       description: topic.description,
       displayOrder: topic.displayOrder,
-      iconUrl: topic.iconUrl || '',
-      isPublic: topic.isPublic
+      iconUrl: topic.iconUrl || "",
+      isPublic: topic.isPublic,
     });
     setIsCreating(true);
   };
 
   const handleDelete = async (topicId: string) => {
-    if (window.confirm('Are you sure? This will delete the topic and ALL its documents and images permanently!')) {
+    if (
+      window.confirm(
+        "Are you sure? This will delete the topic and ALL its documents and images permanently!",
+      )
+    ) {
       await deleteTopicMutation.mutateAsync(topicId);
     }
   };
 
   const handleToggleVisibilityConfirm = async () => {
     if (!togglingTopic) return;
-    
+
     await toggleVisibilityMutation.mutateAsync(togglingTopic.id);
     setTogglingTopic(null);
   };
@@ -115,7 +119,9 @@ export default function AdminCoursesPage() {
         <div className="mb-8">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-3xl font-bold text-white">Interview Prep Courses</h2>
+              <h2 className="text-3xl font-bold text-white">
+                Interview Prep Courses
+              </h2>
               <p className="mt-1 text-sm text-gray-400">
                 Manage topics and documents for interview preparation
               </p>
@@ -125,11 +131,11 @@ export default function AdminCoursesPage() {
                 setIsCreating(true);
                 setEditingTopic(null);
                 setFormData({
-                  name: '',
-                  description: '',
+                  name: "",
+                  description: "",
                   displayOrder: 1,
-                  iconUrl: '',
-                  isPublic: true
+                  iconUrl: "",
+                  isPublic: true,
                 });
               }}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -148,23 +154,27 @@ export default function AdminCoursesPage() {
                 <AcademicCapIcon className="h-8 w-8 text-blue-400" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-400">Total Topics</p>
+                <p className="text-sm font-medium text-gray-400">
+                  Total Topics
+                </p>
                 <p className="text-2xl font-semibold text-white">
-                  {isLoadingStats ? '-' : stats?.totalTopics || 0}
+                  {isLoadingStats ? "-" : stats?.totalTopics || 0}
                 </p>
               </div>
             </div>
           </div>
-          
+
           <div className="bg-[#262626] border border-gray-700 shadow-lg rounded-lg p-6">
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <DocumentTextIcon className="h-8 w-8 text-green-400" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-400">Total Documents</p>
+                <p className="text-sm font-medium text-gray-400">
+                  Total Documents
+                </p>
                 <p className="text-2xl font-semibold text-white">
-                  {isLoadingStats ? '-' : stats?.totalDocuments || 0}
+                  {isLoadingStats ? "-" : stats?.totalDocuments || 0}
                 </p>
               </div>
             </div>
@@ -178,12 +188,14 @@ export default function AdminCoursesPage() {
               <h3 className="text-lg font-bold text-white mb-4">
                 Confirm Visibility Change
               </h3>
-              
+
               <p className="text-sm text-gray-300 mb-6">
-                Are you sure you want to make <span className="font-semibold">{togglingTopic.name}</span>{' '}
+                Are you sure you want to make{" "}
+                <span className="font-semibold">{togglingTopic.name}</span>{" "}
                 <span className="font-semibold">
-                  {togglingTopic.isPublic ? 'private' : 'public'}
-                </span>?
+                  {togglingTopic.isPublic ? "private" : "public"}
+                </span>
+                ?
               </p>
 
               {togglingTopic.isPublic && (
@@ -193,7 +205,7 @@ export default function AdminCoursesPage() {
                   </p>
                 </div>
               )}
-              
+
               <div className="flex justify-end space-x-3">
                 <button
                   onClick={() => setTogglingTopic(null)}
@@ -208,7 +220,9 @@ export default function AdminCoursesPage() {
                 >
                   {toggleVisibilityMutation.isPending ? (
                     <Loader2Icon className="w-5 h-5 animate-spin" />
-                  ) : 'Confirm'}
+                  ) : (
+                    "Confirm"
+                  )}
                 </button>
               </div>
             </div>
@@ -220,9 +234,9 @@ export default function AdminCoursesPage() {
           <div className="fixed inset-0 bg-black bg-opacity-70 overflow-y-auto h-full w-full z-50">
             <div className="relative top-20 mx-auto p-5 border border-gray-700 w-96 shadow-lg rounded-md bg-[#262626]">
               <h3 className="text-lg font-bold text-white mb-4">
-                {editingTopic ? 'Edit Topic' : 'Create New Topic'}
+                {editingTopic ? "Edit Topic" : "Create New Topic"}
               </h3>
-              
+
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300">
@@ -231,25 +245,29 @@ export default function AdminCoursesPage() {
                   <input
                     type="text"
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
                     className="mt-1 block w-full border-gray-600 bg-gray-800 text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2 border"
                     placeholder="React, JavaScript, etc."
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-300">
                     Description
                   </label>
                   <textarea
                     value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, description: e.target.value })
+                    }
                     rows={3}
                     className="mt-1 block w-full border-gray-600 bg-gray-800 text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2 border"
                     placeholder="Brief description of the topic"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-300">
                     Display Order
@@ -257,19 +275,26 @@ export default function AdminCoursesPage() {
                   <input
                     type="number"
                     value={formData.displayOrder}
-                    onChange={(e) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        displayOrder: parseInt(e.target.value),
+                      })
+                    }
                     className="mt-1 block w-full border-gray-600 bg-gray-800 text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2 border"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-300">
                     Icon URL (Optional)
                   </label>
                   <input
                     type="text"
-                    value={formData.iconUrl || ''}
-                    onChange={(e) => setFormData({ ...formData, iconUrl: e.target.value })}
+                    value={formData.iconUrl || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, iconUrl: e.target.value })
+                    }
                     className="mt-1 block w-full border-gray-600 bg-gray-800 text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2 border"
                     placeholder="https://example.com/icon.png"
                   />
@@ -280,14 +305,18 @@ export default function AdminCoursesPage() {
                     <input
                       type="checkbox"
                       checked={formData.isPublic}
-                      onChange={(e) => setFormData({ ...formData, isPublic: e.target.checked })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, isPublic: e.target.checked })
+                      }
                       className="rounded border-gray-600 bg-gray-800 text-blue-600 focus:ring-blue-500"
                     />
-                    <span className="ml-2 text-sm text-gray-300">Public (visible to users)</span>
+                    <span className="ml-2 text-sm text-gray-300">
+                      Public (visible to users)
+                    </span>
                   </label>
                 </div>
               </div>
-              
+
               <div className="mt-6 flex justify-end space-x-3">
                 <button
                   onClick={() => {
@@ -300,12 +329,20 @@ export default function AdminCoursesPage() {
                 </button>
                 <button
                   onClick={handleCreateOrUpdate}
-                  disabled={createTopicMutation.isPending || updateTopicMutation.isPending}
+                  disabled={
+                    createTopicMutation.isPending ||
+                    updateTopicMutation.isPending
+                  }
                   className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
                 >
-                  {createTopicMutation.isPending || updateTopicMutation.isPending ? (
+                  {createTopicMutation.isPending ||
+                  updateTopicMutation.isPending ? (
                     <Loader2Icon className="w-5 h-5 animate-spin" />
-                  ) : editingTopic ? 'Update' : 'Create'}
+                  ) : editingTopic ? (
+                    "Update"
+                  ) : (
+                    "Create"
+                  )}
                 </button>
               </div>
             </div>
@@ -319,7 +356,7 @@ export default function AdminCoursesPage() {
               All Topics
             </h3>
           </div>
-          
+
           {isLoadingTopics ? (
             <div className="flex justify-center py-8">
               <Loader2Icon className="w-8 h-8 animate-spin text-gray-400" />
@@ -335,14 +372,17 @@ export default function AdminCoursesPage() {
           ) : (
             <ul className="divide-y divide-gray-700">
               {topics.map((topic) => (
-                <li key={topic.id} className="px-4 py-4 hover:bg-gray-800/50 transition-colors">
+                <li
+                  key={topic.id}
+                  className="px-4 py-4 hover:bg-gray-800/50 transition-colors"
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <div className="flex-shrink-0">
                         {topic.iconUrl ? (
                           isConfiguredDomain(topic.iconUrl) ? (
-                            <Image 
-                              src={topic.iconUrl} 
+                            <Image
+                              src={topic.iconUrl}
                               alt={topic.name}
                               width={40}
                               height={40}
@@ -350,8 +390,8 @@ export default function AdminCoursesPage() {
                             />
                           ) : (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <img 
-                              src={topic.iconUrl} 
+                            <img
+                              src={topic.iconUrl}
                               alt={topic.name}
                               className="h-10 w-10 rounded-full object-cover"
                             />
@@ -367,13 +407,23 @@ export default function AdminCoursesPage() {
                           <span className="text-sm font-medium text-white">
                             {topic.name}
                           </span>
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${
-                            topic.isPublic 
-                              ? 'bg-green-900/30 text-green-400 border-green-500/30' 
-                              : 'bg-gray-700 text-gray-300 border-gray-600'
-                          }`}>
-                            {topic.isPublic ? 'Public' : 'Private'}
+                          <span
+                            className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${
+                              topic.isPublic
+                                ? "bg-green-900/30 text-green-400 border-green-500/30"
+                                : "bg-gray-700 text-gray-300 border-gray-600"
+                            }`}
+                          >
+                            {topic.isPublic ? "Public" : "Private"}
                           </span>
+                          {/* ✅ ADD VIDEO COUNT BADGE */}
+                          {topic.videoCount !== undefined &&
+                            topic.videoCount > 0 && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-900/30 text-purple-400 border border-purple-500/30">
+                                {topic.videoCount}{" "}
+                                {topic.videoCount === 1 ? "video" : "videos"}
+                              </span>
+                            )}
                         </div>
                         <div className="text-sm text-gray-400">
                           {topic.description}
@@ -383,7 +433,7 @@ export default function AdminCoursesPage() {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center space-x-2">
                       <Link
                         href={`/admin/courses/${topic.id}`}
@@ -396,11 +446,11 @@ export default function AdminCoursesPage() {
                         onClick={() => setTogglingTopic(topic)}
                         disabled={toggleVisibilityMutation.isPending}
                         className={`inline-flex items-center p-1.5 border border-transparent rounded-full ${
-                          topic.isPublic 
-                            ? 'text-green-400 hover:bg-green-900/20' 
-                            : 'text-gray-400 hover:bg-gray-700'
+                          topic.isPublic
+                            ? "text-green-400 hover:bg-green-900/20"
+                            : "text-gray-400 hover:bg-gray-700"
                         } focus:outline-none disabled:opacity-50 transition-colors`}
-                        title={topic.isPublic ? 'Make Private' : 'Make Public'}
+                        title={topic.isPublic ? "Make Private" : "Make Public"}
                       >
                         {topic.isPublic ? (
                           <EyeIcon className="h-4 w-4" />

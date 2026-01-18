@@ -76,6 +76,7 @@ function DocumentContent() {
   const topicId = params.topicId as string;
   const docId = params.docId as string;
   const contentRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
   
   const { data: document, isLoading: isLoadingDoc } = useDocument(docId);
   const { data: readStats, isLoading: isLoadingStats } = useReadStats();
@@ -87,6 +88,8 @@ function DocumentContent() {
   // Header visibility state
   const [showHeader, setShowHeader] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [isHoveringHeader, setIsHoveringHeader] = useState(false);
+  const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (contentRef.current && document?.content) {
@@ -129,20 +132,63 @@ function DocumentContent() {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
       
+      // Clear any existing timeout
+      if (hideTimeoutRef.current) {
+        clearTimeout(hideTimeoutRef.current);
+      }
+      
       if (currentScrollY < lastScrollY) {
-        // Scrolling up
+        // Scrolling up - show header
         setShowHeader(true);
+        
+        // If not hovering, set timeout to hide after 2 seconds
+        if (!isHoveringHeader) {
+          hideTimeoutRef.current = setTimeout(() => {
+            if (!isHoveringHeader) {
+              setShowHeader(false);
+            }
+          }, 2000);
+        }
       } else if (currentScrollY > lastScrollY && currentScrollY > 100) {
-        // Scrolling down and past 100px
-        setShowHeader(false);
+        // Scrolling down and past 100px - hide header immediately if not hovering
+        if (!isHoveringHeader) {
+          setShowHeader(false);
+        }
       }
       
       setLastScrollY(currentScrollY);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY]);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (hideTimeoutRef.current) {
+        clearTimeout(hideTimeoutRef.current);
+      }
+    };
+  }, [lastScrollY, isHoveringHeader]);
+
+  // Handle mouse enter/leave on header
+  const handleMouseEnter = () => {
+    setIsHoveringHeader(true);
+    setShowHeader(true);
+    
+    // Clear any pending hide timeout
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setIsHoveringHeader(false);
+    
+    // Set timeout to hide after 2 seconds when mouse leaves
+    hideTimeoutRef.current = setTimeout(() => {
+      if (!isHoveringHeader) {
+        setShowHeader(false);
+      }
+    }, 2000);
+  };
 
   const handleToggleRead = () => {
     toggleReadMutation.mutate(docId);
@@ -175,34 +221,38 @@ function DocumentContent() {
   return (
     <UserLayout>
       <div className="min-h-screen bg-[#1A1A1A]">
-        {/* Header with auto-hide on scroll */}
+        {/* Fixed Top-Left Corner Controls - Responsive to sidebar */}
         <div 
-          className={`bg-[#262626] shadow-sm border-b border-gray-700 sticky top-0 z-10 transition-transform duration-300 ${
-            showHeader ? 'translate-y-0' : '-translate-y-full'
+          ref={headerRef}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          className={`fixed top-4 left-4 lg:left-[270px] z-50 transition-all duration-300 ${
+            showHeader ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'
           }`}
         >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={() => router.push(`/interview-prep/${topicId}`)}
-                  className="flex items-center text-gray-300 hover:text-white transition-colors cursor-pointer"
-                >
-                  <ArrowLeftIcon className="w-5 h-5 mr-1" />
-                  Back
-                </button>
-                
-                {topicName && (
-                  <div className="text-sm text-gray-400">
-                    <span className="font-medium">{topicName}</span>
-                  </div>
-                )}
-              </div>
+          <div className="bg-[#262626]/95 backdrop-blur-sm border border-gray-700 rounded-lg shadow-xl p-3">
+            <div className="flex flex-col gap-3">
+              {/* Back Button */}
+              <button
+                onClick={() => router.push(`/interview-prep/${topicId}`)}
+                className="flex items-center text-gray-300 hover:text-white transition-colors cursor-pointer"
+              >
+                <ArrowLeftIcon className="w-4 h-4 mr-2" />
+                <span className="text-sm font-medium">Back</span>
+              </button>
               
+              {/* Topic Name */}
+              {topicName && (
+                <div className="text-sm text-gray-400 font-medium pl-1">
+                  {topicName}
+                </div>
+              )}
+              
+              {/* Mark as Read/Unread Button */}
               <button
                 onClick={handleToggleRead}
                 disabled={toggleReadMutation.isPending}
-                className={`flex items-center px-3 py-1.5 rounded-md font-medium text-xs transition-all ${
+                className={`flex items-center justify-center px-3 py-2 rounded-md font-medium text-xs transition-all ${
                   isRead
                     ? 'bg-red-900/30 text-red-400 border border-red-800/50 hover:bg-red-900/40'
                     : 'bg-green-900/30 text-green-400 border border-green-800/50 hover:bg-green-900/40'
@@ -213,12 +263,13 @@ function DocumentContent() {
                 ) : (
                   <CheckCircleSolidIcon className="w-3 h-3 mr-1.5" />
                 )}
-                {isRead ? 'Mark as Unread' : 'Mark as Read'}
+                {isRead ? 'Unread' : 'Mark Read'}
               </button>
             </div>
           </div>
         </div>
 
+        {/* Main Content */}
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <article className="bg-[#262626] rounded-lg shadow-lg overflow-hidden border border-gray-700">
             <div className="px-8 py-6 border-b border-gray-700 bg-[#262626]">

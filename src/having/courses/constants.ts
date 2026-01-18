@@ -5,13 +5,14 @@ export const COURSES_ENDPOINTS = {
   CREATE_TOPIC: '/courses/topics',
   UPDATE_TOPIC: (topicId: string) => `/courses/topics/${topicId}`,
   DELETE_TOPIC: (topicId: string) => `/courses/topics/${topicId}`,
-  TOGGLE_VISIBILITY: (topicId: string) => `/courses/topics/${topicId}/visibility`,  
+  TOGGLE_VISIBILITY: (topicId: string) => `/courses/topics/${topicId}/visibility`,
+  UPDATE_VIDEOS: (topicId: string) => `/courses/topics/${topicId}/videos`,  
   ALL_TOPICS_ADMIN: '/courses/topicsnamesall',
   
   CREATE_DOC: '/courses/docs',
   UPDATE_DOC: (docId: string) => `/courses/docs/${docId}`,
   DELETE_DOC: (docId: string) => `/courses/docs/${docId}`,
-  MOVE_DOC: (docId: string) => `/courses/docs/${docId}/move`,  
+  MOVE_DOC: (docId: string) => `/courses/docs/${docId}/move`,
   
   UPLOAD_IMAGE: '/courses/images',
   DELETE_IMAGE: '/courses/images',

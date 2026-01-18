@@ -492,3 +492,39 @@ export function useToggleReadStatus() {
     },
   });
 }
+
+export function useUpdateTopicVideos() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      topicId,
+      videoLinks,
+    }: {
+      topicId: string;
+      videoLinks: string[];
+    }) => {
+      const response = await coursesService.updateTopicVideos(
+        topicId,
+        videoLinks,
+      );
+      if (response.success && response.data) {
+        return response.data;
+      }
+      throw new Error(response.message || "Failed to update video links");
+    },
+    onSuccess: (data, variables) => {
+      // Invalidate topic details
+      queryClient.invalidateQueries({
+        queryKey: COURSES_QUERY_KEYS.DOCS_BY_TOPIC(variables.topicId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: COURSES_QUERY_KEYS.ADMIN_TOPICS_LIST,
+      });
+      toast.success("Video links updated successfully");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+}

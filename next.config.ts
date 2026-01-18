@@ -27,6 +27,19 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'example.com',
       },
+      // ✅ ADD THESE TWO for YouTube thumbnails
+      {
+        protocol: 'https',
+        hostname: 'img.youtube.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'i.ytimg.com',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
 };
