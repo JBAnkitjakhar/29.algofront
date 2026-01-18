@@ -1,5 +1,45 @@
 /* src/having/courses/components/styles/CourseEditorHighlighting.css */
 
+/* ✅ GLOBAL DARK SCROLLBAR STYLING - Applied to all scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1a1a;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #404040;
+  border-radius: 4px;
+  border: 2px solid #1a1a1a;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #505050;
+}
+
+/* ✅ CURSOR POINTER FOR ALL INTERACTIVE ELEMENTS */
+button,
+a,
+select,
+input[type="color"],
+input[type="range"],
+input[type="file"],
+.clickable,
+[role="button"],
+[onclick] {
+  cursor: pointer !important;
+}
+
+/* Disabled buttons should show not-allowed cursor */
+button:disabled,
+button[disabled] {
+  cursor: not-allowed !important;
+}
+
 /* Code block container in the editor */
 .ProseMirror pre {
   background: #2b2d3a !important;

@@ -83,6 +83,8 @@ function DocumentContent() {
   const toggleReadMutation = useToggleReadStatus();
   const topicName = searchParams.get('topicName');
 
+  const [highlightedContent, setHighlightedContent] = useState<string>('');
+
   const isRead = readStats ? readStats.readDocs.hasOwnProperty(docId) : false;
 
   // Header visibility state
@@ -91,41 +93,95 @@ function DocumentContent() {
   const [isHoveringHeader, setIsHoveringHeader] = useState(false);
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Track sidebar state
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  // Apply syntax highlighting to content
   useEffect(() => {
-    if (contentRef.current && document?.content) {
-      const codeBlocks = contentRef.current.querySelectorAll('pre code');
-      
-      codeBlocks.forEach((block) => {
-        const codeElement = block as HTMLElement;
-        
-        let language = 'plaintext';
-        const classes = codeElement.className.split(' ');
-        for (const cls of classes) {
-          if (cls.startsWith('language-')) {
-            language = cls.replace('language-', '');
-            break;
-          }
-        }
-        
-        try {
-          if (hljs.getLanguage(language)) {
-            const result = hljs.highlight(codeElement.textContent || '', { 
-              language: language,
-              ignoreIllegals: true 
-            });
-            codeElement.innerHTML = result.value;
-            codeElement.classList.add('hljs');
-          } else {
-            const result = hljs.highlightAuto(codeElement.textContent || '');
-            codeElement.innerHTML = result.value;
-            codeElement.classList.add('hljs');
-          }
-        } catch (error) {
-          console.error('Failed to highlight code block:', error);
-        }
-      });
+    if (!document?.content) {
+      setHighlightedContent('');
+      return;
     }
+
+    // Parse the HTML content
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(document.content, 'text/html');
+    const codeBlocks = doc.querySelectorAll('pre code');
+    
+    codeBlocks.forEach((block) => {
+      const codeElement = block as HTMLElement;
+      
+      let language = 'plaintext';
+      const classes = codeElement.className.split(' ');
+      for (const cls of classes) {
+        if (cls.startsWith('language-')) {
+          language = cls.replace('language-', '');
+          break;
+        }
+      }
+      
+      try {
+        if (hljs.getLanguage(language)) {
+          const result = hljs.highlight(codeElement.textContent || '', { 
+            language: language,
+            ignoreIllegals: true 
+          });
+          codeElement.innerHTML = result.value;
+          codeElement.classList.add('hljs');
+        } else {
+          const result = hljs.highlightAuto(codeElement.textContent || '');
+          codeElement.innerHTML = result.value;
+          codeElement.classList.add('hljs');
+        }
+      } catch (error) {
+        console.error('Failed to highlight code block:', error);
+      }
+    });
+    
+    // Set the highlighted content
+    setHighlightedContent(doc.body.innerHTML);
   }, [document?.content]);
+
+  // Detect sidebar state changes
+  useEffect(() => {
+    const checkSidebarState = () => {
+      // Check if we're on desktop (lg breakpoint is 1024px)
+      const isDesktop = window.innerWidth >= 1024;
+      
+      if (isDesktop) {
+        // On desktop, check localStorage for sidebar state
+        const savedCollapsed = localStorage.getItem('userSidebarCollapsed');
+        const isOpen = savedCollapsed ? !JSON.parse(savedCollapsed) : true;
+        setIsSidebarOpen(isOpen);
+      } else {
+        // On mobile, sidebar is always considered "closed" for positioning
+        setIsSidebarOpen(false);
+      }
+    };
+
+    // Check initially
+    checkSidebarState();
+
+    // Listen for localStorage changes (when sidebar is toggled)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'userSidebarCollapsed') {
+        checkSidebarState();
+      }
+    };
+
+    // Listen for resize
+    window.addEventListener('resize', checkSidebarState);
+    window.addEventListener('storage', handleStorageChange);
+
+    // Poll for changes since localStorage events don't fire in same tab
+    const interval = setInterval(checkSidebarState, 100);
+
+    return () => {
+      window.removeEventListener('resize', checkSidebarState);
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, []);
 
   // Handle scroll for header visibility
   useEffect(() => {
@@ -221,56 +277,67 @@ function DocumentContent() {
   return (
     <UserLayout>
       <div className="min-h-screen bg-[#1A1A1A]">
-        {/* Fixed Top-Left Corner Controls - Responsive to sidebar */}
+        {/* Left Corner - Back button and Topic name */}
         <div 
           ref={headerRef}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
-          className={`fixed top-4 left-4 lg:left-[270px] z-50 transition-all duration-300 ${
+          className={`fixed top-4 left-4 z-40 transition-all duration-300 ${
             showHeader ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'
-          }`}
+          } ${isSidebarOpen ? 'lg:left-[268px]' : 'lg:left-[56px]'}`}
         >
-          <div className="bg-[#262626]/95 backdrop-blur-sm border border-gray-700 rounded-lg shadow-xl p-3">
-            <div className="flex flex-col gap-3">
-              {/* Back Button */}
+          <div className="bg-[#262626]/95 backdrop-blur-sm border border-gray-700 rounded-lg shadow-xl px-4 py-3">
+            <div className="flex items-center gap-4">
               <button
                 onClick={() => router.push(`/interview-prep/${topicId}`)}
-                className="flex items-center text-gray-300 hover:text-white transition-colors cursor-pointer"
+                className="flex items-center text-gray-300 hover:text-white transition-colors"
               >
                 <ArrowLeftIcon className="w-4 h-4 mr-2" />
                 <span className="text-sm font-medium">Back</span>
               </button>
               
-              {/* Topic Name */}
               {topicName && (
-                <div className="text-sm text-gray-400 font-medium pl-1">
-                  {topicName}
-                </div>
+                <>
+                  <div className="w-px h-5 bg-gray-700" />
+                  <div className="text-sm text-gray-300 font-medium">
+                    {topicName}
+                  </div>
+                </>
               )}
-              
-              {/* Mark as Read/Unread Button */}
-              <button
-                onClick={handleToggleRead}
-                disabled={toggleReadMutation.isPending}
-                className={`flex items-center justify-center px-3 py-2 rounded-md font-medium text-xs transition-all ${
-                  isRead
-                    ? 'bg-red-900/30 text-red-400 border border-red-800/50 hover:bg-red-900/40'
-                    : 'bg-green-900/30 text-green-400 border border-green-800/50 hover:bg-green-900/40'
-                } disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer`}
-              >
-                {toggleReadMutation.isPending ? (
-                  <Loader2Icon className="w-3 h-3 mr-1.5 animate-spin" />
-                ) : (
-                  <CheckCircleSolidIcon className="w-3 h-3 mr-1.5" />
-                )}
-                {isRead ? 'Unread' : 'Mark Read'}
-              </button>
             </div>
           </div>
         </div>
 
+        {/* Right Corner - Mark as Read/Unread Button */}
+        <div 
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          className={`fixed top-4 right-4 z-40 transition-all duration-300 ${
+            showHeader ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'
+          }`}
+        >
+          <div className="bg-[#262626]/95 backdrop-blur-sm border border-gray-700 rounded-lg shadow-xl">
+            <button
+              onClick={handleToggleRead}
+              disabled={toggleReadMutation.isPending}
+              className={`flex items-center justify-center px-4 py-2.5 rounded-lg font-medium text-sm transition-all ${
+                isRead
+                  ? 'bg-red-900/30 text-red-400 border border-red-800/50 hover:bg-red-900/40'
+                  : 'bg-green-900/30 text-green-400 border border-green-800/50 hover:bg-green-900/40'
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              {toggleReadMutation.isPending ? (
+                <Loader2Icon className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <CheckCircleSolidIcon className="w-4 h-4 mr-2" />
+              )}
+              {isRead ? 'Mark as Unread' : 'Mark as Read'}
+            </button>
+          </div>
+        </div>
+
         {/* Main Content */}
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
           <article className="bg-[#262626] rounded-lg shadow-lg overflow-hidden border border-gray-700">
             <div className="px-8 py-6 border-b border-gray-700 bg-[#262626]">
               <div className="flex items-center">
@@ -286,7 +353,7 @@ function DocumentContent() {
               <div 
                 ref={contentRef}
                 className="ProseMirror prose prose-lg max-w-none"
-                dangerouslySetInnerHTML={{ __html: document.content || '' }}
+                dangerouslySetInnerHTML={{ __html: highlightedContent }}
               />
             </div>
           </article>
