@@ -16,8 +16,7 @@ import {
 import { Editor } from "@monaco-editor/react";
 import {
   useUpdateApproach,
-  useAnalyzeComplexityWithAI,
-  useSaveComplexityAnalysis,
+  useAnalyzeComplexity,
 } from "@/having/userQuestion/hooks";
 import { ComplexityAnalysisModal } from "./ComplexityAnalysisModal";
 import type { ApproachDetail } from "@/having/userQuestion/types";
@@ -43,8 +42,7 @@ export function ApproachEditor({ approach, onBack }: ApproachEditorProps) {
   const [complexityError, setComplexityError] = useState("");
 
   const updateMutation = useUpdateApproach();
-  const analyzeAIMutation = useAnalyzeComplexityWithAI();
-  const saveMutation = useSaveComplexityAnalysis();
+  const analyzeMutation = useAnalyzeComplexity();
   const isResizingRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -148,6 +146,7 @@ export function ApproachEditor({ approach, onBack }: ApproachEditorProps) {
   };
 
   const handleAnalyzeComplexity = () => {
+    // ✅ If complexity already exists, just show it (cached in approach)
     if (approach.complexityAnalysis) {
       setComplexityResult({
         timeComplexity: approach.complexityAnalysis.timeComplexity,
@@ -159,46 +158,26 @@ export function ApproachEditor({ approach, onBack }: ApproachEditorProps) {
       return;
     }
 
-    analyzeAIMutation.mutate(
-      { code: approach.codeContent, language: approach.codeLanguage },
+    // ✅ No complexity exists → Call backend (backend will analyze and save)
+    analyzeMutation.mutate(
       {
-        onSuccess: (data) => {
-          console.log("AI Analysis Response:", data); // Debug log
-
-          const payload = {
-            timeComplexity: data.timeComplexity,
-            spaceComplexity: data.spaceComplexity,
-            complexityDescription: data.complexityDescription || "",
-          };
-
-          console.log("Saving payload:", payload); // Debug log
-
-          saveMutation.mutate(
-            {
-              questionId: approach.questionId,
-              approachId: approach.id,
-              data: payload,
-            },
-            {
-              onSuccess: () => {
-                setComplexityResult({
-                  timeComplexity: data.timeComplexity,
-                  spaceComplexity: data.spaceComplexity,
-                  description: data.complexityDescription || "",
-                });
-                setComplexityError("");
-                setShowComplexityModal(true);
-              },
-              onError: (error: Error) => {
-                console.error("Save error:", error); // Debug log
-                setComplexityError(error.message);
-                setShowComplexityModal(true);
-              },
-            }
-          );
+        questionId: approach.questionId,
+        approachId: approach.id,
+      },
+      {
+        onSuccess: (updatedApproach) => {
+          // Backend returns full ApproachDetail with complexity filled
+          if (updatedApproach.complexityAnalysis) {
+            setComplexityResult({
+              timeComplexity: updatedApproach.complexityAnalysis.timeComplexity,
+              spaceComplexity: updatedApproach.complexityAnalysis.spaceComplexity,
+              description: updatedApproach.complexityAnalysis.complexityDescription || "",
+            });
+            setComplexityError("");
+            setShowComplexityModal(true);
+          }
         },
         onError: (error: Error) => {
-          console.error("AI Analysis error:", error); // Debug log
           if (
             error.message.includes("429") ||
             error.message.includes("quota") ||
@@ -226,7 +205,7 @@ export function ApproachEditor({ approach, onBack }: ApproachEditorProps) {
   };
 
   const textCharsLeft = TEXT_CONTENT_LIMIT - textContent.length;
-  const isAnalyzing = analyzeAIMutation.isPending || saveMutation.isPending;
+  const isAnalyzing = analyzeMutation.isPending;
 
   const getStatusIcon = () => {
     switch (approach.status) {

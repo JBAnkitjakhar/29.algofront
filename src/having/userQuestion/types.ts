@@ -103,24 +103,6 @@ export interface CreateApproachRequest {
 export interface UpdateApproachRequest {
   textContent: string;
 }
-
-export interface AnalyzeComplexityRequest {
-  timeComplexity: string;
-  spaceComplexity: string;
-  complexityDescription: string;
-}
-
-export interface AnalyzeComplexityBackendRequest {
-  code: string;
-  language?: string;
-}
-
-export interface AnalyzeComplexityBackendResponse {
-  timeComplexity: string;
-  spaceComplexity: string;
-  complexityDescription: string;
-}
-
 export interface QuestionPageData {
   question: QuestionDetail | null;
   progress: UserQuestionProgress | null;

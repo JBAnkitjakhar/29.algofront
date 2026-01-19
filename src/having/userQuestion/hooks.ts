@@ -7,8 +7,6 @@ import toast from "react-hot-toast";
 import type {
   CreateApproachRequest,
   UpdateApproachRequest,
-  AnalyzeComplexityBackendRequest,
-  AnalyzeComplexityRequest,
 } from "./types";
 
 export function useQuestionById(id: string) {
@@ -263,54 +261,38 @@ export function useDeleteApproach() {
   });
 }
 
-export function useAnalyzeComplexityWithAI() {
-  return useMutation({
-    mutationFn: async (data: AnalyzeComplexityBackendRequest) => {
-      const response = await userQuestionService.analyzeComplexityWithAI(data);
-      if (!response.success) {
-        throw new Error(
-          response.error || response.message || "Failed to analyze complexity"
-        );
-      }
-
-      console.log("Hook - AI response.data:", response.data);
-      return response.data!;
-    },
-  });
-}
-
-export function useSaveComplexityAnalysis() {
+// ✅ NEW: Single hook for complexity analysis (replaces both old hooks)
+export function useAnalyzeComplexity() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({
       questionId,
       approachId,
-      data,
     }: {
       questionId: string;
       approachId: string;
-      data: AnalyzeComplexityRequest;
     }) => {
-      const response = await userQuestionService.saveComplexityAnalysis(
+      const response = await userQuestionService.analyzeComplexity(
         questionId,
-        approachId,
-        data
+        approachId
       );
       if (!response.success) {
         throw new Error(
           response.error ||
             response.message ||
-            "Failed to save complexity analysis"
+            "Failed to analyze complexity"
         );
       }
       return response.data!;
     },
     onSuccess: (newData, { questionId, approachId }) => {
+      // ✅ Update cached approach detail
       queryClient.setQueryData(
         USER_QUESTION_QUERY_KEYS.APPROACH_DETAIL(questionId, approachId),
         newData
       );
+      // ✅ Invalidate approaches list to show complexity badge
       queryClient.invalidateQueries({
         queryKey: USER_QUESTION_QUERY_KEYS.APPROACHES(questionId),
       });

@@ -10,17 +10,7 @@ import type {
   ApproachDetail,
   CreateApproachRequest,
   UpdateApproachRequest,
-  AnalyzeComplexityRequest,
-  AnalyzeComplexityBackendRequest,
-  AnalyzeComplexityBackendResponse,
 } from "./types";
-
-// Define the backend wrapper type
-interface BackendWrappedResponse<T> {
-  success: boolean;
-  data: T;
-  message?: string;
-}
 
 class UserQuestionService {
   async getQuestionById(id: string): Promise<ApiResponse<QuestionDetail>> {
@@ -98,36 +88,14 @@ class UserQuestionService {
     );
   }
 
-  async analyzeComplexityWithAI(
-    data: AnalyzeComplexityBackendRequest
-  ): Promise<ApiResponse<AnalyzeComplexityBackendResponse>> {
-    const response = await apiClient.post<BackendWrappedResponse<AnalyzeComplexityBackendResponse>>(
-      `/complexity/analyze`,
-      data
-    );
-    
-    // Backend returns { success: true, data: { timeComplexity, spaceComplexity, complexityDescription }, message }
-    // Extract the nested data
-    if (response.success && response.data) {
-      const wrappedData = response.data as BackendWrappedResponse<AnalyzeComplexityBackendResponse>;
-      const nestedData = wrappedData.data || response.data;
-      return {
-        success: true,
-        data: nestedData as AnalyzeComplexityBackendResponse,
-      };
-    }
-    
-    return response as ApiResponse<AnalyzeComplexityBackendResponse>;
-  }
-
-  async saveComplexityAnalysis(
+  // ✅ NEW: Single method for complexity analysis (backend does everything)
+  async analyzeComplexity(
     questionId: string,
-    approachId: string,
-    data: AnalyzeComplexityRequest
+    approachId: string
   ): Promise<ApiResponse<ApproachDetail>> {
     return apiClient.put<ApproachDetail>(
-      `/approaches/question/${questionId}/${approachId}/analyze-complexity`,
-      data
+      `/approaches/question/${questionId}/${approachId}/analyze-complexity`
+      // ⭐ No body - backend handles everything
     );
   }
 
