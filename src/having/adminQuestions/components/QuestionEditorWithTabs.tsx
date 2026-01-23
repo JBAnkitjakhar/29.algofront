@@ -9,7 +9,7 @@ import type { Testcase } from "../types";
 import { CodeTemplateEditor } from "./CodeTemplateEditor";
 import { TestcaseEditor } from "./TestcaseEditor";
 
-type EditorTab = "statement" | "userStarterCode" | "generalTemplate" | "correctSolution" | "testcases";
+type EditorTab = "statement" | "userStarterCode" | "correctSolution" | "testcases";
 
 interface QuestionEditorWithTabsProps {
   // Statement
@@ -20,9 +20,6 @@ interface QuestionEditorWithTabsProps {
   // Code Templates
   userStarterCode: Record<string, string>;
   onUserStarterCodeChange: (code: Record<string, string>) => void;
-  
-  generalTemplate: Record<string, string>;
-  onGeneralTemplateChange: (code: Record<string, string>) => void;
   
   correctSolution: Record<string, string>;
   onCorrectSolutionChange: (code: Record<string, string>) => void;
@@ -38,8 +35,6 @@ export function QuestionEditorWithTabs({
   onEditorReady,
   userStarterCode,
   onUserStarterCodeChange,
-  generalTemplate,
-  onGeneralTemplateChange,
   correctSolution,
   onCorrectSolutionChange,
   testcases,
@@ -50,7 +45,6 @@ export function QuestionEditorWithTabs({
   const tabs = [
     { id: "statement" as const, label: "Statement", icon: "📝" },
     { id: "userStarterCode" as const, label: "User Starter Code", icon: "🎯" },
-    { id: "generalTemplate" as const, label: "General Template", icon: "📋" },
     { id: "correctSolution" as const, label: "Correct Solution", icon: "✅" },
     { id: "testcases" as const, label: "Testcases", icon: "🧪" },
   ];
@@ -101,17 +95,6 @@ export function QuestionEditorWithTabs({
             description="The function signature that users will see and complete. Keep it simple and focused. (Max 3,000 characters per language)"
             maxLength={3000}
             placeholder="// Function signature for users to implement"
-          />
-        )}
-
-        {activeTab === "generalTemplate" && (
-          <CodeTemplateEditor
-            code={generalTemplate}
-            onChange={onGeneralTemplateChange}
-            title="General Template"
-            description="Complete code template with imports, helper functions, and structure. (Max 20,000 characters per language)"
-            maxLength={20000}
-            placeholder="// Complete template with all necessary imports and setup"
           />
         )}
 

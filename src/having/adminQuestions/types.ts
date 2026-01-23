@@ -17,13 +17,12 @@ export interface QuestionSummary {
   categoryId: string;
   displayOrder: number;
   imageCount: number;
+  methodName: string; // ✅ NEW
   
   userStarterCodeLanguages: string[];
-  generalTemplateLanguages: string[];
   correctSolutionLanguages: string[];
   
   testcaseCount: number;
-  
   createdByName: string;
   updatedAt: string;
   solutionCount: number;
@@ -62,9 +61,9 @@ export interface QuestionDetail {
   title: string;
   statement: string;
   imageUrls: string[] | null;
+  methodName: string;
   
   userStarterCode: Record<string, string>;
-  generalTemplate: Record<string, string>;
   correctSolution: Record<string, string>;
   
   testcases: Testcase[];
@@ -85,9 +84,9 @@ export interface CreateQuestionRequest {
   categoryId: string;
   level: QuestionLevel;
   displayOrder: number;
+  methodName: string;
   imageUrls?: string[];
   userStarterCode?: Record<string, string>;
-  generalTemplate?: Record<string, string>;
   correctSolution?: Record<string, string>;
   testcases?: Testcase[];
 }
@@ -100,9 +99,9 @@ export interface UpdateQuestionRequest {
   categoryId?: string;
   level?: QuestionLevel;
   displayOrder?: number;
+  methodName?: string; // ✅ NEW
   imageUrls?: string[];
   userStarterCode?: Record<string, string>;
-  generalTemplate?: Record<string, string>;
   correctSolution?: Record<string, string>;
   testcases?: Testcase[];
 }

@@ -40,7 +40,6 @@ export function QuestionCard({ question }: QuestionCardProps) {
 
   // Check if each code template type exists
   const hasUserStarter = question.userStarterCodeLanguages.length > 0;
-  const hasGeneralTemplate = question.generalTemplateLanguages.length > 0;
   const hasCorrectSolution = question.correctSolutionLanguages.length > 0;
 
   return (
@@ -118,7 +117,7 @@ export function QuestionCard({ question }: QuestionCardProps) {
           </div>
 
           {/* Code Templates - Only show if any exist */}
-          {(hasUserStarter || hasGeneralTemplate || hasCorrectSolution) && (
+          {(hasUserStarter || hasCorrectSolution) && (
             <div className="mt-3 flex items-center gap-2 text-sm flex-wrap">
               <CodeBracketIcon className="h-4 w-4 text-green-400 flex-shrink-0" />
               
@@ -128,15 +127,6 @@ export function QuestionCard({ question }: QuestionCardProps) {
                   title={`Starter: ${question.userStarterCodeLanguages.join(", ")}`}
                 >
                   userStarter
-                </span>
-              )}
-              
-              {hasGeneralTemplate && (
-                <span 
-                  className="px-2 py-0.5 bg-blue-900/30 text-blue-300 rounded border border-blue-500/30 cursor-pointer"
-                  title={`Temp: ${question.generalTemplateLanguages.join(", ")}`}
-                >
-                  GeneralTemp
                 </span>
               )}
               

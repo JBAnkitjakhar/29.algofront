@@ -1,8 +1,47 @@
 /* src/having/adminQuestions/components/styles/EditorHighlighting.css */
 
+/* ✅ GLOBAL DARK SCROLLBAR STYLING - Applied to all scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1a1a;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #404040;
+  border-radius: 4px;
+  border: 2px solid #1a1a1a;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #505050;
+}
+
+/* ✅ CURSOR POINTER FOR ALL INTERACTIVE ELEMENTS */
+button,
+a,
+select,
+input[type="color"],
+input[type="range"],
+input[type="file"],
+.clickable,
+[role="button"],
+[onclick] {
+  cursor: pointer !important;
+}
+
+button:disabled,
+button[disabled] {
+  cursor: not-allowed !important;
+}
+
 /* Code block container in the editor */
 .ProseMirror pre {
-  background: #2b2d3a !important; /* Lighter dark background like in your image */
+  background: #2b2d3a !important;
   color: #d4d4d4 !important;
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'Courier New', monospace;
   font-size: 14px;
@@ -21,14 +60,72 @@
   padding: 0;
 }
 
-/* Inline code */
+/* ✅ FIXED - Inline code with fixed height and margin */
 .ProseMirror code {
   background-color: #8b727d42;
   color: #c6c8d6;
-  padding: 2px 2px;
+  padding: 2px 6px;
   border-radius: 3px;
   font-size: 0.9em;
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+  display: inline-block;
+  min-height: 20px;
+  line-height: 1.4;
+  vertical-align: middle;
+  margin: 2px 2px;
+}
+
+/* ✅ When code contains superscript - increase height */
+.ProseMirror code:has(sup),
+.ProseMirror code:has(.tiptap-superscript) {
+  min-height: 24px;
+  line-height: 1.6;
+}
+
+/* ✅ When code contains subscript - increase height */
+.ProseMirror code:has(sub),
+.ProseMirror code:has(.tiptap-subscript) {
+  min-height: 24px;
+  line-height: 1.6;
+}
+
+/* ✅ When code contains both - even taller */
+.ProseMirror code:has(sup):has(sub),
+.ProseMirror code:has(.tiptap-superscript):has(.tiptap-subscript) {
+  min-height: 26px;
+  line-height: 1.8;
+}
+
+/* ✅ Superscript styling */
+.ProseMirror sup,
+.ProseMirror .tiptap-superscript {
+  vertical-align: super;
+  font-size: 0.75em;
+  line-height: 0;
+}
+
+/* ✅ Subscript styling */
+.ProseMirror sub,
+.ProseMirror .tiptap-subscript {
+  vertical-align: sub;
+  font-size: 0.75em;
+  line-height: 0;
+}
+
+/* ✅ Superscript inside code */
+.ProseMirror code sup,
+.ProseMirror code .tiptap-superscript {
+  position: relative;
+  top: -0.4em;
+  font-size: 0.7em;
+}
+
+/* ✅ Subscript inside code */
+.ProseMirror code sub,
+.ProseMirror code .tiptap-subscript {
+  position: relative;
+  bottom: -0.25em;
+  font-size: 0.7em;
 }
 
 /* CENTER IMAGES - Images should be centered and on their own line */
@@ -215,7 +312,7 @@
 
 /* Additional editor-specific styles */
 .ProseMirror pre.hljs {
-  background: #2b2d3a !important; /* Ensure consistent background */
+  background: #2b2d3a !important;
 }
 
 /* Code block with line numbers (optional) */

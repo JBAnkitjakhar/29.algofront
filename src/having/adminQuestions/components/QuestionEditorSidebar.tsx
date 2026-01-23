@@ -1,4 +1,4 @@
-//src/having/adminQuestions/components/QuestionEditorSidebar.tsx
+// src/having/adminQuestions/components/QuestionEditorSidebar.tsx
 
 "use client";
 
@@ -20,6 +20,9 @@ import {
   Palette,
   Highlighter,
   ArrowLeft,
+  Superscript,
+  Subscript,
+  Type,
 } from "lucide-react";
 import { useUploadQuestionImage } from "../hooks";
 import toast from "react-hot-toast";
@@ -57,6 +60,15 @@ const HIGHLIGHT_COLORS = [
   "#E91E63",
 ];
 
+const FONT_SIZES = [
+  { label: "Small", value: "12px" },
+  { label: "Normal", value: "16px" },
+  { label: "Large", value: "20px" },
+  { label: "XL", value: "24px" },
+  { label: "2XL", value: "32px" },
+  { label: "3XL", value: "40px" },
+];
+
 interface QuestionEditorSidebarProps {
   editor: Editor | null;
   onImageUpload?: (imageUrl: string) => void;
@@ -75,6 +87,8 @@ export function QuestionEditorSidebar({
   const [selectedHighlightColor, setSelectedHighlightColor] =
     useState("#FFEB3B");
   const [selectedLanguage, setSelectedLanguage] = useState("javascript");
+  const [selectedFontSize, setSelectedFontSize] = useState("16px");
+  const [showFontSizePicker, setShowFontSizePicker] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadImageMutation = useUploadQuestionImage();
 
@@ -228,6 +242,81 @@ export function QuestionEditorSidebar({
             >
               <Code className="w-4 h-4" />
               <span>Code</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Font Size */}
+        <div className="space-y-2 pt-2 border-t border-gray-700">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+            Font Size
+          </p>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowFontSizePicker(!showFontSizePicker)}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-gray-700 border border-gray-700 transition-colors text-gray-300"
+            >
+              <Type className="w-4 h-4" />
+              <span className="flex-1 text-left">{selectedFontSize}</span>
+            </button>
+
+            {showFontSizePicker && (
+              <>
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setShowFontSizePicker(false)}
+                />
+                <div className="absolute left-0 top-full mt-1 p-2 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-20 w-full">
+                  {FONT_SIZES.map((size) => (
+                    <button
+                      key={size.value}
+                      type="button"
+                      onClick={() => {
+                        editor?.chain().focus().setFontSize(size.value).run();
+                        setSelectedFontSize(size.value);
+                        setShowFontSizePicker(false);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-700 text-gray-300"
+                    >
+                      {size.label} ({size.value})
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Superscript / Subscript */}
+        <div className="space-y-2 pt-2 border-t border-gray-700">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+            Special
+          </p>
+          <div className="flex flex-col gap-1">
+            <button
+              type="button"
+              onClick={() => editor?.chain().focus().toggleSuperscript().run()}
+              className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
+                editor?.isActive("superscript")
+                  ? "bg-blue-900/30 text-blue-400 border border-blue-500/30"
+                  : "hover:bg-gray-700 text-gray-300 border border-gray-700"
+              }`}
+            >
+              <Superscript className="w-4 h-4" />
+              <span>Superscript (x²)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => editor?.chain().focus().toggleSubscript().run()}
+              className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
+                editor?.isActive("subscript")
+                  ? "bg-blue-900/30 text-blue-400 border border-blue-500/30"
+                  : "hover:bg-gray-700 text-gray-300 border border-gray-700"
+              }`}
+            >
+              <Subscript className="w-4 h-4" />
+              <span>Subscript (H₂O)</span>
             </button>
           </div>
         </div>

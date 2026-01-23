@@ -1,4 +1,4 @@
-//src/app/admin/questions/[id]/edit/page.tsx
+// src/app/admin/questions/[id]/edit/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -43,9 +43,9 @@ export default function EditQuestionPage() {
     categoryId: "",
     level: "EASY",
     displayOrder: 1,
+    methodName: "",
     imageUrls: [],
     userStarterCode: {},
-    generalTemplate: {},
     correctSolution: {},
     testcases: [],
   });
@@ -72,9 +72,9 @@ export default function EditQuestionPage() {
           categoryId: question.categoryId,
           level: question.level,
           displayOrder: question.displayOrder,
+          methodName: question.methodName,
           imageUrls: question.imageUrls || [],
           userStarterCode: question.userStarterCode || {},
-          generalTemplate: question.generalTemplate || {},
           correctSolution: question.correctSolution || {},
           testcases: question.testcases || [],
         });
@@ -188,6 +188,7 @@ export default function EditQuestionPage() {
 
     const title = formData.title || "";
     const statement = formData.statement || "";
+    const methodName = formData.methodName || "";
 
     // Title validation
     if (!title.trim()) {
@@ -201,6 +202,22 @@ export default function EditQuestionPage() {
       if (title.trim().length > QUESTION_VALIDATION.TITLE_MAX_LENGTH) {
         errors.push(
           `Title must be less than ${QUESTION_VALIDATION.TITLE_MAX_LENGTH} characters`
+        );
+      }
+    }
+
+    // Method Name validation
+    if (!methodName.trim()) {
+      errors.push("Method name is required");
+    } else {
+      if (methodName.trim().length < QUESTION_VALIDATION.METHOD_NAME_MIN_LENGTH) {
+        errors.push(
+          `Method name must be at least ${QUESTION_VALIDATION.METHOD_NAME_MIN_LENGTH} characters`
+        );
+      }
+      if (methodName.trim().length > QUESTION_VALIDATION.METHOD_NAME_MAX_LENGTH) {
+        errors.push(
+          `Method name must be less than ${QUESTION_VALIDATION.METHOD_NAME_MAX_LENGTH} characters`
         );
       }
     }
@@ -239,15 +256,6 @@ export default function EditQuestionPage() {
       if (code.length > QUESTION_VALIDATION.USER_STARTER_CODE_MAX_LENGTH) {
         errors.push(
           `User starter code for ${lang} exceeds ${QUESTION_VALIDATION.USER_STARTER_CODE_MAX_LENGTH} characters`
-        );
-      }
-    });
-
-    // General Template validation
-    Object.entries(formData.generalTemplate || {}).forEach(([lang, code]) => {
-      if (code.length > QUESTION_VALIDATION.GENERAL_TEMPLATE_MAX_LENGTH) {
-        errors.push(
-          `General template for ${lang} exceeds ${QUESTION_VALIDATION.GENERAL_TEMPLATE_MAX_LENGTH} characters`
         );
       }
     });
@@ -297,12 +305,11 @@ export default function EditQuestionPage() {
       updatedFormData.categoryId !== question?.categoryId ||
       updatedFormData.level !== question?.level ||
       updatedFormData.displayOrder !== question?.displayOrder ||
+      updatedFormData.methodName !== question?.methodName ||
       JSON.stringify(updatedFormData.imageUrls) !==
         JSON.stringify(question?.imageUrls) ||
       JSON.stringify(updatedFormData.userStarterCode) !==
         JSON.stringify(question?.userStarterCode) ||
-      JSON.stringify(updatedFormData.generalTemplate) !==
-        JSON.stringify(question?.generalTemplate) ||
       JSON.stringify(updatedFormData.correctSolution) !==
         JSON.stringify(question?.correctSolution) ||
       JSON.stringify(updatedFormData.testcases) !==
@@ -412,6 +419,29 @@ export default function EditQuestionPage() {
             </div>
           </div>
 
+          {/* Method Name */}
+          <div className="bg-[#262626] border border-gray-700 rounded-lg p-6">
+            <label
+              htmlFor="methodName"
+              className="block text-sm font-medium text-gray-300 mb-2"
+            >
+              Method Name *
+            </label>
+            <input
+              type="text"
+              id="methodName"
+              value={formData.methodName || ""}
+              onChange={(e) => updateFormData("methodName", e.target.value)}
+              className="w-full rounded-md bg-gray-800 border-gray-600 text-white placeholder-gray-400 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              placeholder="e.g., numDistinctIslands, twoSum, etc."
+              maxLength={QUESTION_VALIDATION.METHOD_NAME_MAX_LENGTH}
+            />
+            <div className="mt-1 text-xs text-gray-500">
+              {(formData.methodName || "").length}/
+              {QUESTION_VALIDATION.METHOD_NAME_MAX_LENGTH} characters
+            </div>
+          </div>
+
           {/* Category, Level, Display Order */}
           <div className="bg-[#262626] border border-gray-700 rounded-lg p-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -498,10 +528,6 @@ export default function EditQuestionPage() {
             userStarterCode={formData.userStarterCode || {}}
             onUserStarterCodeChange={(code) =>
               updateFormData("userStarterCode", code)
-            }
-            generalTemplate={formData.generalTemplate || {}}
-            onGeneralTemplateChange={(code) =>
-              updateFormData("generalTemplate", code)
             }
             correctSolution={formData.correctSolution || {}}
             onCorrectSolutionChange={(code) =>
@@ -720,17 +746,6 @@ export default function EditQuestionPage() {
                 <li>• Function signature only</li>
                 <li>• 3k chars per language</li>
                 <li>• Multiple languages OK</li>
-              </ul>
-            </div>
-
-            <div className="p-3 bg-gray-800 rounded-lg border border-gray-700">
-              <h3 className="font-semibold text-white mb-1">
-                📋 General Template
-              </h3>
-              <ul className="space-y-1 text-xs text-gray-400">
-                <li>• Imports + structure</li>
-                <li>• 20k chars per language</li>
-                <li>• Full setup code</li>
               </ul>
             </div>
 

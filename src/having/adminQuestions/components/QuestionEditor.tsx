@@ -10,6 +10,10 @@ import Highlight from '@tiptap/extension-highlight';
 import TextAlign from '@tiptap/extension-text-align';
 import Image from '@tiptap/extension-image';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
+import Superscript from '@tiptap/extension-superscript';
+import Subscript from '@tiptap/extension-subscript';
+import { FontSize } from '../extensions/FontSize';
+import { CustomCode } from '../extensions/CustomCode';
 import { createLowlight } from 'lowlight';
 import javascript from 'highlight.js/lib/languages/javascript';
 import typescript from 'highlight.js/lib/languages/typescript';
@@ -96,7 +100,9 @@ export function QuestionEditor({
     extensions: [
       StarterKit.configure({
         codeBlock: false,
+        code: false, // Disable default code
       }),
+      CustomCode, // Use custom code that allows super/sub
       TextStyle,
       Color,
       Highlight.configure({ 
@@ -120,6 +126,17 @@ export function QuestionEditor({
         },
         defaultLanguage: 'javascript',
       }),
+      Superscript.configure({
+        HTMLAttributes: {
+          class: 'tiptap-superscript',
+        },
+      }),
+      Subscript.configure({
+        HTMLAttributes: {
+          class: 'tiptap-subscript',
+        },
+      }),
+      FontSize,
       Placeholder.configure({
         placeholder,
       }),
