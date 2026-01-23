@@ -30,7 +30,7 @@ interface ApproachEditorProps {
 const TEXT_CONTENT_LIMIT = 50000;
 
 export function ApproachEditor({ approach, onBack }: ApproachEditorProps) {
-  const [textContent, setTextContent] = useState(approach.textContent);
+  const [textContent, setTextContent] = useState(approach.textContent || "");
   const [hasChanges, setHasChanges] = useState(false);
   const [leftPanelWidth, setLeftPanelWidth] = useState(50);
   const [showComplexityModal, setShowComplexityModal] = useState(false);
@@ -54,12 +54,12 @@ export function ApproachEditor({ approach, onBack }: ApproachEditorProps) {
   useEffect(() => {
     localStorage.setItem(
       "approach_editor_panel_width",
-      leftPanelWidth.toString()
+      leftPanelWidth.toString(),
     );
   }, [leftPanelWidth]);
 
   useEffect(() => {
-    const changed = textContent !== approach.textContent;
+    const changed = textContent !== (approach.textContent || "");
     setHasChanges(changed);
   }, [textContent, approach]);
 
@@ -100,7 +100,7 @@ export function ApproachEditor({ approach, onBack }: ApproachEditorProps) {
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
     },
-    [leftPanelWidth]
+    [leftPanelWidth],
   );
 
   const handleSave = async () => {
@@ -126,7 +126,7 @@ export function ApproachEditor({ approach, onBack }: ApproachEditorProps) {
         onError: () => {
           toast.error("Failed to update approach");
         },
-      }
+      },
     );
   };
 
@@ -170,8 +170,10 @@ export function ApproachEditor({ approach, onBack }: ApproachEditorProps) {
           if (updatedApproach.complexityAnalysis) {
             setComplexityResult({
               timeComplexity: updatedApproach.complexityAnalysis.timeComplexity,
-              spaceComplexity: updatedApproach.complexityAnalysis.spaceComplexity,
-              description: updatedApproach.complexityAnalysis.complexityDescription || "",
+              spaceComplexity:
+                updatedApproach.complexityAnalysis.spaceComplexity,
+              description:
+                updatedApproach.complexityAnalysis.complexityDescription || "",
             });
             setComplexityError("");
             setShowComplexityModal(true);
@@ -184,16 +186,17 @@ export function ApproachEditor({ approach, onBack }: ApproachEditorProps) {
             error.message.includes("rate limit")
           ) {
             setComplexityError(
-              "Rate limit exceeded. Please wait a moment and try again."
+              "Rate limit exceeded. Please wait a moment and try again.",
             );
           } else {
             setComplexityError(
-              error.message || "Failed to analyze complexity. Please try again."
+              error.message ||
+                "Failed to analyze complexity. Please try again.",
             );
           }
           setShowComplexityModal(true);
         },
-      }
+      },
     );
   };
 
@@ -350,7 +353,8 @@ export function ApproachEditor({ approach, onBack }: ApproachEditorProps) {
                     <div>
                       <span className="text-gray-400">Memory:</span>
                       <span className="ml-2 font-medium">
-                        {(approach.memory! / 1024 / 1024).toFixed(2)} MB
+                        {/* ✅ FIXED */}
+                        {approach.memory!.toFixed(2)} MB
                       </span>
                     </div>
                   </div>
@@ -403,23 +407,26 @@ export function ApproachEditor({ approach, onBack }: ApproachEditorProps) {
                 </div>
               )}
 
-              {approach.status === "TIME_LIMIT_EXCEEDED" && approach.tleTestcase && (
-                <div className="space-y-2 text-sm">
-                  <div className="font-medium">Time Limit Exceeded:</div>
-                  <div className="bg-[#1A1A1A] rounded p-2 space-y-1 font-mono text-xs">
-                    <div>
-                      <span className="text-gray-500">Input:</span>
-                      <span className="ml-2">{approach.tleTestcase.input}</span>
-                    </div>
-                    {approach.runtime && (
+              {approach.status === "TIME_LIMIT_EXCEEDED" &&
+                approach.tleTestcase && (
+                  <div className="space-y-2 text-sm">
+                    <div className="font-medium">Time Limit Exceeded:</div>
+                    <div className="bg-[#1A1A1A] rounded p-2 space-y-1 font-mono text-xs">
                       <div>
-                        <span className="text-gray-500">Runtime:</span>
-                        <span className="ml-2">{approach.runtime} ms</span>
+                        <span className="text-gray-500">Input:</span>
+                        <span className="ml-2">
+                          {approach.tleTestcase.input}
+                        </span>
                       </div>
-                    )}
+                      {approach.runtime && (
+                        <div>
+                          <span className="text-gray-500">Runtime:</span>
+                          <span className="ml-2">{approach.runtime} ms</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </div>
 
             <div className="p-4 pt-0">

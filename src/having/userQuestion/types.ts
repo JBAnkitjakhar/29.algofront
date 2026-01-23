@@ -6,9 +6,8 @@ export interface QuestionDetail {
   title: string;
   statement: string;
   imageUrls: string[];
-  
+  testcases: TestCase[];
   userStarterCode: Record<string, string>;
-  
   categoryId: string;
   level: 'EASY' | 'MEDIUM' | 'HARD';
   displayOrder: number;
@@ -18,7 +17,6 @@ export interface QuestionDetail {
   updatedAt: string;
 }
 
-// ✅ TestCase for UI display only
 export interface TestCase {
   id: number;
   input: Record<string, unknown>;
@@ -84,18 +82,6 @@ export interface ApproachDetail extends ApproachMetadata {
   codeContent: string;
 }
 
-export interface CreateApproachRequest {
-  textContent: string;
-  codeContent: string;
-  codeLanguage: string;
-  status?: ApproachStatus;
-  runtime?: number;
-  memory?: number;
-  complexityAnalysis?: ComplexityAnalysis;
-  wrongTestcase?: TestCaseFailure;
-  tleTestcase?: TestCaseFailure;
-}
-
 export interface UpdateApproachRequest {
   textContent: string;
 }
@@ -107,37 +93,62 @@ export interface QuestionPageData {
   approaches: ApproachMetadata[];
 }
 
+// ============ RUN MODE TYPES ============
 export interface RunCodeRequest {
   code: string;
   language: string;
-  testCaseIds: number[];
+  testCases: Array<{  // ✅ Send full testcase objects, not IDs!
+    input: Record<string, unknown>;
+  }>;
 }
 
+export interface RunTestCaseResult {
+  id: number;
+  status: 'PASS' | 'FAIL' | 'TLE';
+  expectedOutput: string | null;
+  userOutput: string | null;
+  error: string | null;
+}
+
+export interface RunCodeResponse {
+  success: boolean;
+  verdict: 'ACCEPTED' | 'WRONG_ANSWER' | 'TLE';
+  message: string;
+  testCaseResults: RunTestCaseResult[];
+  metrics: {
+    memoryUsedMb: number;
+    totalTestCases: number;
+    passedTestCases: number;
+    failedTestCases: number;
+    tleTestCases: number;
+  };
+}
+
+
+// ============ SUBMIT MODE TYPES ============
 export interface SubmitCodeRequest {
   code: string;
   language: string;
 }
 
-export interface TestCaseResult {
-  index: number;
-  output: string;
-  timeMs: number;
-  status: 'success' | 'wrong' | 'error' | 'tle';
+export interface SubmitFirstFailure {
+  testCaseId: number;
+  input: string;
+  expectedOutput: string;
+  userOutput: string | null;
+  error: string | null;
 }
 
-export interface ExecutionMetrics {
-  maxTimeMs: number;
-  totalMemoryMb: number;
-  totalTestCases: number;
-  passedTestCases: number;
-}
-
-export interface CodeExecutionResult {
+export interface SubmitCodeResponse {
   success: boolean;
   verdict: 'ACCEPTED' | 'WRONG_ANSWER' | 'TLE';
   message: string;
-  testCaseResults?: TestCaseResult[];
-  metrics?: ExecutionMetrics;
-  error?: string;
-  failedTestCaseIndex?: number;
+  passedTestCases: number;
+  totalTestCases: number;
+  metrics: {
+    runtime: number;
+    memory: number;
+  } | null;
+  firstFailure: SubmitFirstFailure | null;
+  approachId: string | null;
 }

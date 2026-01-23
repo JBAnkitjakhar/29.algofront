@@ -3,13 +3,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { 
-  Trash2, 
-  Code, 
-  CheckCircle, 
-  XCircle, 
-  Clock,
-} from "lucide-react";
+import { Trash2, Code, CheckCircle, XCircle, Clock } from "lucide-react";
 import {
   useApproachesByQuestion,
   useDeleteApproach,
@@ -28,14 +22,16 @@ export function UserApproaches({
   onEditApproach,
 }: UserApproachesProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [loadingApproachId, setLoadingApproachId] = useState<string | null>(null);
+  const [loadingApproachId, setLoadingApproachId] = useState<string | null>(
+    null,
+  );
 
   const { data: approaches, isLoading } = useApproachesByQuestion(questionId);
   const deleteMutation = useDeleteApproach();
 
   const { data: approachDetail } = useApproachDetail(
     questionId,
-    loadingApproachId || ""
+    loadingApproachId || "",
   );
 
   useEffect(() => {
@@ -54,7 +50,7 @@ export function UserApproaches({
       { questionId, approachId },
       {
         onSettled: () => setDeletingId(null),
-      }
+      },
     );
   };
 
@@ -88,7 +84,7 @@ export function UserApproaches({
     }
   };
 
-  const sortedApproaches = approaches || [];// already from backend sorted by updatedat desc
+  const sortedApproaches = approaches || []; // already from backend sorted by updatedat desc
 
   if (isLoading) {
     return (
@@ -138,7 +134,9 @@ export function UserApproaches({
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center space-x-2">
                 {getStatusIcon(approach.status)}
-                <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(approach.status)}`}>
+                <span
+                  className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(approach.status)}`}
+                >
                   {approach.status.replace("_", " ")}
                 </span>
                 <span className="px-2 py-1 bg-blue-900/30 text-blue-400 rounded text-xs font-medium">
@@ -160,22 +158,30 @@ export function UserApproaches({
               </button>
             </div>
 
-            {approach.status === "ACCEPTED" && approach.runtime !== null && approach.memory !== null && (
-              <div className="flex items-center space-x-4 mb-2 text-sm">
-                <span className="text-gray-400">
-                  Runtime: <span className="text-green-400">{approach.runtime} ms</span>
-                </span>
-                <span className="text-gray-400">
-                  Memory: <span className="text-green-400">
-                    {(approach.memory / (1024 * 1024)).toFixed(2)} MB
+            {approach.status === "ACCEPTED" &&
+              approach.runtime !== null &&
+              approach.memory !== null && (
+                <div className="flex items-center space-x-4 mb-2 text-sm">
+                  <span className="text-gray-400">
+                    Runtime:{" "}
+                    <span className="text-green-400">
+                      {approach.runtime} ms
+                    </span>
                   </span>
-                </span>
-              </div>
-            )}
+                  <span className="text-gray-400">
+                    Memory:{" "}
+                    <span className="text-green-400">
+                      {approach.memory.toFixed(2)} MB
+                    </span>
+                  </span>
+                </div>
+              )}
 
             {approach.status === "WRONG_ANSWER" && approach.wrongTestcase && (
               <div className="mb-2 p-2 bg-red-900/10 border border-red-900/30 rounded text-xs">
-                <div className="text-red-400 font-medium mb-1">Failed Test Case:</div>
+                <div className="text-red-400 font-medium mb-1">
+                  Failed Test Case:
+                </div>
                 <div className="text-gray-400">
                   <div>Input: {approach.wrongTestcase.input}</div>
                   <div>Expected: {approach.wrongTestcase.expectedOutput}</div>
@@ -184,23 +190,32 @@ export function UserApproaches({
               </div>
             )}
 
-            {approach.status === "TIME_LIMIT_EXCEEDED" && approach.tleTestcase && (
-              <div className="mb-2 p-2 bg-yellow-900/10 border border-yellow-900/30 rounded text-xs">
-                <div className="text-yellow-400 font-medium mb-1">Time Limit Exceeded:</div>
-                <div className="text-gray-400">
-                  <div>Input: {approach.tleTestcase.input}</div>
+            {approach.status === "TIME_LIMIT_EXCEEDED" &&
+              approach.tleTestcase && (
+                <div className="mb-2 p-2 bg-yellow-900/10 border border-yellow-900/30 rounded text-xs">
+                  <div className="text-yellow-400 font-medium mb-1">
+                    Time Limit Exceeded:
+                  </div>
+                  <div className="text-gray-400">
+                    <div>Input: {approach.tleTestcase.input}</div>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {approach.status === "ACCEPTED" && approach.complexityAnalysis && (
               <div className="mt-3 pt-3 border-t border-gray-700">
                 <div className="flex items-center space-x-4 text-sm">
                   <span className="text-gray-400">
-                    Time: <span className="text-purple-400">{approach.complexityAnalysis.timeComplexity}</span>
+                    Time:{" "}
+                    <span className="text-purple-400">
+                      {approach.complexityAnalysis.timeComplexity}
+                    </span>
                   </span>
                   <span className="text-gray-400">
-                    Space: <span className="text-purple-400">{approach.complexityAnalysis.spaceComplexity}</span>
+                    Space:{" "}
+                    <span className="text-purple-400">
+                      {approach.complexityAnalysis.spaceComplexity}
+                    </span>
                   </span>
                 </div>
               </div>

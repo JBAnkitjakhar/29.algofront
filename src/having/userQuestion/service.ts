@@ -1,4 +1,4 @@
-// src/having/userQuestion/service.ts - COMPLETE FILE
+// src/having/userQuestion/service.ts
 
 import { apiClient } from "@/lib/api/client";
 import type { ApiResponse } from "@/types";
@@ -11,7 +11,8 @@ import type {
   UpdateApproachRequest,
   RunCodeRequest,
   SubmitCodeRequest,
-  CodeExecutionResult,
+  RunCodeResponse,
+  SubmitCodeResponse,
 } from "./types";
 
 class UserQuestionService {
@@ -89,24 +90,24 @@ class UserQuestionService {
     );
   }
 
-  // ✅ NEW: Run code with selected testcases (1-5)
+  // ============ CODE EXECUTION ============
+  
   async runCode(
     questionId: string,
     request: RunCodeRequest
-  ): Promise<ApiResponse<CodeExecutionResult>> {
-    return apiClient.post<CodeExecutionResult>(
-      `/question-compiler/questions/${questionId}/run`,
+  ): Promise<ApiResponse<RunCodeResponse>> {
+    return apiClient.post<RunCodeResponse>(
+      `/question-compiler/${questionId}/run`,
       request
     );
   }
 
-  // ✅ NEW: Submit code (all testcases + save approach)
   async submitCode(
     questionId: string,
     request: SubmitCodeRequest
-  ): Promise<ApiResponse<CodeExecutionResult>> {
-    return apiClient.post<CodeExecutionResult>(
-      `/question-compiler/questions/${questionId}/submit`,
+  ): Promise<ApiResponse<SubmitCodeResponse>> {
+    return apiClient.post<SubmitCodeResponse>(
+      `/question-compiler/${questionId}/submit`,
       request
     );
   }

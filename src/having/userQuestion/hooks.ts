@@ -1,4 +1,4 @@
-// src/having/userQuestion/hooks.ts - COMPLETE FILE
+// src/having/userQuestion/hooks.ts
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { userQuestionService } from "./service";
@@ -264,7 +264,8 @@ export function useAnalyzeComplexity() {
   });
 }
 
-// ✅ NEW: Run code hook
+// ============ CODE EXECUTION HOOKS ============
+
 export function useRunCode() {
   return useMutation({
     mutationFn: async ({
@@ -290,7 +291,6 @@ export function useRunCode() {
   });
 }
 
-// ✅ NEW: Submit code hook
 export function useSubmitCode() {
   const queryClient = useQueryClient();
 
@@ -314,11 +314,11 @@ export function useSubmitCode() {
       });
 
       if (data.verdict === "ACCEPTED") {
-        toast.success("Accepted! All test cases passed ✓");
+        toast.success(`✅ ${data.message}`);
       } else if (data.verdict === "TLE") {
-        toast.error(`Time Limit Exceeded on test case ${data.failedTestCaseIndex}`);
+        toast.error(`⏱️ ${data.message}`);
       } else {
-        toast.error(`Wrong Answer on test case ${data.failedTestCaseIndex}`);
+        toast.error(`❌ ${data.message}`);
       }
     },
     onError: (error: Error) => {

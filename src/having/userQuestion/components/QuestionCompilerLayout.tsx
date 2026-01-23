@@ -1,4 +1,4 @@
-// src/having/userQuestion/components/QuestionCompilerLayout.tsx - COMPLETE FILE
+// src/having/userQuestion/components/QuestionCompilerLayout.tsx
 
 "use client";
 
@@ -22,11 +22,7 @@ import {
 import { Language, SUPPORTED_LANGUAGES } from "@/lib/compiler/languages";
 import { TestCaseManager } from "./TestCaseManager";
 import { useRunCode, useSubmitCode } from "@/having/userQuestion/hooks";
-import type {
-  QuestionDetail,
-  TestCase,
-  TestCaseResult as BackendTestCaseResult,
-} from "@/having/userQuestion/types";
+import type { QuestionDetail, TestCase } from "@/having/userQuestion/types";
 import type { editor } from "monaco-editor";
 import toast from "react-hot-toast";
 
@@ -81,7 +77,7 @@ export function QuestionCompilerLayout({
   const getStorageKey = useCallback(
     (language: string, type: "code") =>
       `question_${question.id}_${language}_${type}`,
-    [question.id]
+    [question.id],
   );
 
   // Get available languages based on userStarterCode
@@ -140,9 +136,9 @@ export function QuestionCompilerLayout({
   const [code, setCode] = useState<string>("");
   const [starterCode, setStarterCode] = useState<string>("");
 
-  const [selectedTestCases, setSelectedTestCases] = useState<number[]>([]); // ✅ Now stores testcase IDs
+  const [selectedTestCases, setSelectedTestCases] = useState<number[]>([]); // Stores testcase IDs
   const [testCaseResults, setTestCaseResults] = useState<TestCaseResult[]>([]);
-  const [executionMode, setExecutionMode] = useState
+  const [executionMode, setExecutionMode] = useState<
     "idle" | "running" | "results"
   >("idle");
 
@@ -153,14 +149,14 @@ export function QuestionCompilerLayout({
   const [isExecuting, setIsExecuting] = useState(false);
 
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
-  
+
   const runCodeMutation = useRunCode();
   const submitCodeMutation = useSubmitCode();
 
   // ✅ Load first 3 testcase IDs on mount
   useEffect(() => {
     if (question.testcases && question.testcases.length > 0) {
-      const firstThree = question.testcases.slice(0, 3).map(tc => tc.id);
+      const firstThree = question.testcases.slice(0, 3).map((tc) => tc.id);
       setSelectedTestCases(firstThree);
     }
   }, [question.testcases]);
@@ -185,7 +181,7 @@ export function QuestionCompilerLayout({
     setStarterCode(codeToLoad);
 
     const savedCode = localStorage.getItem(
-      getStorageKey(selectedLanguage.name, "code")
+      getStorageKey(selectedLanguage.name, "code"),
     );
     setCode(savedCode || codeToLoad);
   }, [selectedLanguage, question.userStarterCode, getStorageKey]);
@@ -231,7 +227,7 @@ export function QuestionCompilerLayout({
         const deltaPercent = (deltaY / containerHeight) * 100;
         const newHeight = Math.min(
           Math.max(startHeight + deltaPercent, 20),
-          60
+          60,
         );
         setTestCaseHeight(newHeight);
       };
@@ -249,7 +245,7 @@ export function QuestionCompilerLayout({
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
     },
-    [testCaseHeight]
+    [testCaseHeight],
   );
 
   const handleRunCode = async () => {
@@ -273,27 +269,46 @@ export function QuestionCompilerLayout({
     setTestCaseResults([]);
 
     try {
+      // ✅ Build array of test case objects with input data
+      const testCasesToSend = selectedTestCases.map((tcId) => {
+        const testCase = question.testcases.find((tc) => tc.id === tcId)!;
+        return {
+          input: testCase.input,
+        };
+      });
+
       const result = await runCodeMutation.mutateAsync({
         questionId: question.id,
         request: {
           code,
-          language: LANG_KEY_MAP[selectedLanguage.name] || selectedLanguage.name.toLowerCase(),
-          testCaseIds: selectedTestCases, // ✅ Send testcase IDs
+          language:
+            LANG_KEY_MAP[selectedLanguage.name] ||
+            selectedLanguage.name.toLowerCase(),
+          testCases: testCasesToSend, // ✅ Send full testcase objects
         },
       });
 
-      // ✅ Map backend results to UI format
-      const mappedResults: TestCaseResult[] = result.testCaseResults!.map((backendResult) => {
-        const testCase = question.testcases.find(tc => tc.id === backendResult.index)!;
-        
-        return {
-          testCase,
-          userOutput: backendResult.output,
-          actualTime: backendResult.timeMs,
-          status: backendResult.status === 'success' ? 'passed' : 
-                  backendResult.status === 'tle' ? 'tle' : 'failed'
-        };
-      });
+      // Map backend results to UI format
+      const mappedResults: TestCaseResult[] = result.testCaseResults.map(
+        (backendResult, index) => {
+          const testCase = question.testcases.find(
+            (tc) => tc.id === selectedTestCases[index],
+          )!;
+
+          return {
+            testCase,
+            userOutput:
+              backendResult.userOutput || backendResult.error || "No output",
+            actualTime: 0, // Backend doesn't return individual times in run mode
+            status:
+              backendResult.status === "PASS"
+                ? "passed"
+                : backendResult.status === "TLE"
+                  ? "tle"
+                  : "failed",
+          };
+        },
+      );
 
       setTestCaseResults(mappedResults);
       setExecutionMode("results");
@@ -301,7 +316,10 @@ export function QuestionCompilerLayout({
       if (result.verdict === "ACCEPTED") {
         toast.success("All test cases passed! ✓");
       } else {
-        toast.error(`Test case ${result.failedTestCaseIndex} failed`);
+        const failedIndex = mappedResults.findIndex(
+          (r) => r.status !== "passed",
+        );
+        toast.error(`Test case ${failedIndex + 1} failed`);
       }
     } catch (error) {
       console.error("Execution error:", error);
@@ -325,7 +343,9 @@ export function QuestionCompilerLayout({
         questionId: question.id,
         request: {
           code,
-          language: LANG_KEY_MAP[selectedLanguage.name] || selectedLanguage.name.toLowerCase(),
+          language:
+            LANG_KEY_MAP[selectedLanguage.name] ||
+            selectedLanguage.name.toLowerCase(),
         },
       });
 
@@ -378,12 +398,12 @@ export function QuestionCompilerLayout({
       {/* Toolbar */}
       <div className="flex items-center justify-between px-4 py-2 bg-[#1A1A1A] border-b border-gray-700">
         <div className="flex items-center space-x-3">
-          {/* Language Selector - Only show available languages */}
+          {/* Language Selector */}
           <select
             value={selectedLanguage.name}
             onChange={(e) => {
               const language = availableLanguages.find(
-                (lang) => lang.name === e.target.value
+                (lang) => lang.name === e.target.value,
               );
               if (language) handleLanguageChange(language);
             }}
