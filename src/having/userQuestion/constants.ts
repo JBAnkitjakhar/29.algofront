@@ -1,4 +1,4 @@
-// src/having/userQuestion/constants.ts
+// src/having/userQuestion/constants.ts - COMPLETE FILE
 
 export const USER_QUESTION_QUERY_KEYS = {
   DETAIL: (id: string) => ['user-question', 'detail', id],

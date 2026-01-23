@@ -6,12 +6,8 @@ export interface QuestionDetail {
   title: string;
   statement: string;
   imageUrls: string[];
-  imageFolderUrl: string | null;
   
   userStarterCode: Record<string, string>;
-  generalTemplate: Record<string, string>;
-  correctSolution: Record<string, string>;
-  testcases: TestCase[];
   
   categoryId: string;
   level: 'EASY' | 'MEDIUM' | 'HARD';
@@ -22,11 +18,11 @@ export interface QuestionDetail {
   updatedAt: string;
 }
 
+// ✅ TestCase for UI display only
 export interface TestCase {
   id: number;
   input: Record<string, unknown>;
   expectedOutput: unknown;
-  expectedTimeLimit: number;
 }
 
 export interface UserQuestionProgress {
@@ -51,7 +47,7 @@ export interface SolutionSummary {
   youtubeEmbedUrl: string | null;
 }
 
-export type ApproachStatus = 'ACCEPTED' | 'WRONG_ANSWER' | 'TLE';
+export type ApproachStatus = 'ACCEPTED' | 'WRONG_ANSWER' | 'TIME_LIMIT_EXCEEDED';
 
 export interface ComplexityAnalysis {
   timeComplexity: string;
@@ -103,6 +99,7 @@ export interface CreateApproachRequest {
 export interface UpdateApproachRequest {
   textContent: string;
 }
+
 export interface QuestionPageData {
   question: QuestionDetail | null;
   progress: UserQuestionProgress | null;
@@ -110,24 +107,37 @@ export interface QuestionPageData {
   approaches: ApproachMetadata[];
 }
 
-export interface BackendTestCaseResult {
+export interface RunCodeRequest {
+  code: string;
+  language: string;
+  testCaseIds: number[];
+}
+
+export interface SubmitCodeRequest {
+  code: string;
+  language: string;
+}
+
+export interface TestCaseResult {
   index: number;
   output: string;
   timeMs: number;
-  status: 'success' | 'error' | 'timeout';
+  status: 'success' | 'wrong' | 'error' | 'tle';
 }
 
 export interface ExecutionMetrics {
   maxTimeMs: number;
   totalMemoryMb: number;
   totalTestCases: number;
-  executedTestCases: number;
+  passedTestCases: number;
 }
 
-export interface ExecutionResponse {
+export interface CodeExecutionResult {
   success: boolean;
-  testCaseResults: BackendTestCaseResult[];
-  metrics: ExecutionMetrics;
+  verdict: 'ACCEPTED' | 'WRONG_ANSWER' | 'TLE';
   message: string;
+  testCaseResults?: TestCaseResult[];
+  metrics?: ExecutionMetrics;
   error?: string;
+  failedTestCaseIndex?: number;
 }

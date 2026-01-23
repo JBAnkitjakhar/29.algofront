@@ -1,4 +1,4 @@
-// src/having/userQuestion/service.ts
+// src/having/userQuestion/service.ts - COMPLETE FILE
 
 import { apiClient } from "@/lib/api/client";
 import type { ApiResponse } from "@/types";
@@ -8,8 +8,10 @@ import type {
   SolutionSummary,
   ApproachMetadata,
   ApproachDetail,
-  CreateApproachRequest,
   UpdateApproachRequest,
+  RunCodeRequest,
+  SubmitCodeRequest,
+  CodeExecutionResult,
 } from "./types";
 
 class UserQuestionService {
@@ -58,16 +60,6 @@ class UserQuestionService {
     );
   }
 
-  async createApproach(
-    questionId: string,
-    data: CreateApproachRequest
-  ): Promise<ApiResponse<ApproachDetail>> {
-    return apiClient.post<ApproachDetail>(
-      `/approaches/question/${questionId}`,
-      data
-    );
-  }
-
   async updateApproach(
     questionId: string,
     approachId: string,
@@ -88,14 +80,34 @@ class UserQuestionService {
     );
   }
 
-  // ✅ NEW: Single method for complexity analysis (backend does everything)
   async analyzeComplexity(
     questionId: string,
     approachId: string
   ): Promise<ApiResponse<ApproachDetail>> {
     return apiClient.put<ApproachDetail>(
       `/approaches/question/${questionId}/${approachId}/analyze-complexity`
-      // ⭐ No body - backend handles everything
+    );
+  }
+
+  // ✅ NEW: Run code with selected testcases (1-5)
+  async runCode(
+    questionId: string,
+    request: RunCodeRequest
+  ): Promise<ApiResponse<CodeExecutionResult>> {
+    return apiClient.post<CodeExecutionResult>(
+      `/question-compiler/questions/${questionId}/run`,
+      request
+    );
+  }
+
+  // ✅ NEW: Submit code (all testcases + save approach)
+  async submitCode(
+    questionId: string,
+    request: SubmitCodeRequest
+  ): Promise<ApiResponse<CodeExecutionResult>> {
+    return apiClient.post<CodeExecutionResult>(
+      `/question-compiler/questions/${questionId}/submit`,
+      request
     );
   }
 

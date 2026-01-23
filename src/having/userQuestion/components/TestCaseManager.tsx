@@ -1,9 +1,9 @@
-// src/having/userQuestion/components/TestCaseManager.tsx - COMPLETE FILE
+// src/having/userQuestion/components/TestCaseManager.tsx
 
 "use client";
 
 import { useState } from "react";
-import { Plus, X, CheckCircle, XCircle, Clock } from "lucide-react";
+import { Plus, X, CheckCircle, XCircle } from "lucide-react";
 import type { TestCase } from "@/having/userQuestion/types";
 
 interface TestCaseResult {
@@ -15,20 +15,24 @@ interface TestCaseResult {
 
 interface TestCaseManagerProps {
   allTestCases: TestCase[];
-  selectedTestCases: TestCase[];
-  onTestCaseSelectionChange: (testCases: TestCase[]) => void;
+  selectedTestCaseIds: number[];
+  onTestCaseSelectionChange: (testCaseIds: number[]) => void;
   results?: TestCaseResult[];
   mode?: "edit" | "results";
 }
 
 export function TestCaseManager({
   allTestCases,
-  selectedTestCases,
+  selectedTestCaseIds,
   onTestCaseSelectionChange,
   results,
   mode = "edit",
 }: TestCaseManagerProps) {
   const [activeTab, setActiveTab] = useState(0);
+
+  const selectedTestCases = selectedTestCaseIds
+    .map(id => allTestCases.find(tc => tc.id === id))
+    .filter((tc): tc is TestCase => tc !== undefined);
 
   const formatValue = (value: unknown): string => {
     if (Array.isArray(value)) {
@@ -38,25 +42,25 @@ export function TestCaseManager({
   };
 
   const addTestCase = () => {
-    if (selectedTestCases.length >= 5) return;
+    if (selectedTestCaseIds.length >= 5) return;
 
-    const selectedIds = new Set(selectedTestCases.map(tc => tc.id));
-    const nextTestCase = allTestCases.find(tc => !selectedIds.has(tc.id));
+    const selectedIdSet = new Set(selectedTestCaseIds);
+    const nextTestCase = allTestCases.find(tc => !selectedIdSet.has(tc.id));
 
     if (nextTestCase) {
-      onTestCaseSelectionChange([...selectedTestCases, nextTestCase]);
-      setActiveTab(selectedTestCases.length);
+      onTestCaseSelectionChange([...selectedTestCaseIds, nextTestCase.id]);
+      setActiveTab(selectedTestCaseIds.length);
     }
   };
 
   const removeTestCase = (index: number) => {
-    if (selectedTestCases.length <= 1) return;
+    if (selectedTestCaseIds.length <= 1) return;
 
-    const newTestCases = selectedTestCases.filter((_, i) => i !== index);
-    onTestCaseSelectionChange(newTestCases);
+    const newIds = selectedTestCaseIds.filter((_, i) => i !== index);
+    onTestCaseSelectionChange(newIds);
 
-    if (activeTab >= newTestCases.length) {
-      setActiveTab(newTestCases.length - 1);
+    if (activeTab >= newIds.length) {
+      setActiveTab(newIds.length - 1);
     } else if (activeTab > index) {
       setActiveTab(activeTab - 1);
     }
@@ -66,7 +70,7 @@ export function TestCaseManager({
     return results?.[index];
   };
 
-  const canAddMore = selectedTestCases.length < 5 && selectedTestCases.length < allTestCases.length;
+  const canAddMore = selectedTestCaseIds.length < 5 && selectedTestCaseIds.length < allTestCases.length;
 
   return (
     <>
@@ -95,8 +99,6 @@ export function TestCaseManager({
                       <span>
                         {result.status === "passed" ? (
                           <CheckCircle className="w-3.5 h-3.5 text-green-400" />
-                        ) : result.status === "tle" ? (
-                          <Clock className="w-3.5 h-3.5 text-yellow-400" />
                         ) : (
                           <XCircle className="w-3.5 h-3.5 text-red-400" />
                         )}
@@ -189,19 +191,14 @@ export function TestCaseManager({
 
                           {/* Timing Info */}
                           <div className="flex items-center justify-between text-xs">
-                            <span className="text-gray-400">
-                              Expected Time: {selectedTestCases[activeTab].expectedTimeLimit}ms
-                            </span>
                             <span
                               className={`font-medium ${
                                 result.status === "tle"
                                   ? "text-yellow-400"
-                                  : result.actualTime <= selectedTestCases[activeTab].expectedTimeLimit
-                                  ? "text-green-400"
-                                  : "text-yellow-400"
+                                  : "text-green-400"
                               }`}
                             >
-                              Actual: {result.actualTime}ms
+                              Execution time: {result.actualTime}ms
                             </span>
                           </div>
 
@@ -233,11 +230,6 @@ export function TestCaseManager({
                       <div className="bg-[#1A1A1A] border border-gray-700 rounded px-3 py-2 text-sm text-gray-300 font-mono">
                         {formatValue(selectedTestCases[activeTab].expectedOutput)}
                       </div>
-                    </div>
-
-                    {/* Time Limit Info */}
-                    <div className="text-xs text-gray-500">
-                      Time Limit: {selectedTestCases[activeTab].expectedTimeLimit}ms
                     </div>
                   </>
                 ) : null}

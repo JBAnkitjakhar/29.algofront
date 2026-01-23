@@ -20,16 +20,13 @@ import {
   Palette,
 } from "lucide-react";
 import { Language, SUPPORTED_LANGUAGES } from "@/lib/compiler/languages";
-import { CodeAssembler } from "@/having/userQuestion/components/codeAssembler";
-import { ResultComparator } from "@/having/userQuestion/components/resultComparator";
 import { TestCaseManager } from "./TestCaseManager";
-import { useCreateApproach } from "@/having/userQuestion/hooks";
+import { useRunCode, useSubmitCode } from "@/having/userQuestion/hooks";
 import type {
   QuestionDetail,
   TestCase,
-  BackendTestCaseResult,
+  TestCaseResult as BackendTestCaseResult,
 } from "@/having/userQuestion/types";
-import type { TestCaseResult as TestCaseResultType } from "@/having/userQuestion/components/resultComparator";
 import type { editor } from "monaco-editor";
 import toast from "react-hot-toast";
 
@@ -37,7 +34,13 @@ interface QuestionCompilerLayoutProps {
   question: QuestionDetail;
 }
 
-type TestCaseResult = TestCaseResultType;
+// ✅ Local TestCaseResult for UI display
+interface TestCaseResult {
+  testCase: TestCase;
+  userOutput: string;
+  actualTime: number;
+  status: "passed" | "failed" | "tle";
+}
 
 const MONACO_THEMES = [
   { name: "VS Code Dark", value: "vs-dark", preview: "bg-gray-800 text-white" },
@@ -137,9 +140,9 @@ export function QuestionCompilerLayout({
   const [code, setCode] = useState<string>("");
   const [starterCode, setStarterCode] = useState<string>("");
 
-  const [selectedTestCases, setSelectedTestCases] = useState<TestCase[]>([]);
+  const [selectedTestCases, setSelectedTestCases] = useState<number[]>([]); // ✅ Now stores testcase IDs
   const [testCaseResults, setTestCaseResults] = useState<TestCaseResult[]>([]);
-  const [executionMode, setExecutionMode] = useState<
+  const [executionMode, setExecutionMode] = useState
     "idle" | "running" | "results"
   >("idle");
 
@@ -150,12 +153,15 @@ export function QuestionCompilerLayout({
   const [isExecuting, setIsExecuting] = useState(false);
 
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
-  const createApproachMutation = useCreateApproach();
+  
+  const runCodeMutation = useRunCode();
+  const submitCodeMutation = useSubmitCode();
 
-  // Load first 3 test cases on mount
+  // ✅ Load first 3 testcase IDs on mount
   useEffect(() => {
     if (question.testcases && question.testcases.length > 0) {
-      setSelectedTestCases(question.testcases.slice(0, 3));
+      const firstThree = question.testcases.slice(0, 3).map(tc => tc.id);
+      setSelectedTestCases(firstThree);
     }
   }, [question.testcases]);
 
@@ -257,87 +263,57 @@ export function QuestionCompilerLayout({
       return;
     }
 
+    if (selectedTestCases.length > 5) {
+      toast.error("Maximum 5 test cases allowed");
+      return;
+    }
+
     setIsExecuting(true);
     setExecutionMode("running");
     setTestCaseResults([]);
 
     try {
-      const assembled = CodeAssembler.assemble(
-        selectedLanguage.name,
-        code,
-        selectedTestCases
-      );
+      const result = await runCodeMutation.mutateAsync({
+        questionId: question.id,
+        request: {
+          code,
+          language: LANG_KEY_MAP[selectedLanguage.name] || selectedLanguage.name.toLowerCase(),
+          testCaseIds: selectedTestCases, // ✅ Send testcase IDs
+        },
+      });
 
-      const response = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080/api"
-        }/question-compiler/execute`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${
-              document.cookie.split("token=")[1]?.split(";")[0]
-            }`,
-          },
-          body: JSON.stringify({
-            language: assembled.language,
-            code: assembled.fullCode,
-            // ✅ No testCaseIds needed - backend just runs the code
-          }),
-        }
-      );
+      // ✅ Map backend results to UI format
+      const mappedResults: TestCaseResult[] = result.testCaseResults!.map((backendResult) => {
+        const testCase = question.testcases.find(tc => tc.id === backendResult.index)!;
+        
+        return {
+          testCase,
+          userOutput: backendResult.output,
+          actualTime: backendResult.timeMs,
+          status: backendResult.status === 'success' ? 'passed' : 
+                  backendResult.status === 'tle' ? 'tle' : 'failed'
+        };
+      });
 
-      const result = await response.json();
-
-      if (!result.success) {
-        toast.error(result.error || "Execution failed");
-        setExecutionMode("idle");
-        return;
-      }
-
-      // ✅ Backend returns results in order (index 0, 1, 2, ...)
-      // We match them with selectedTestCases by array index
-      const stdout = result.testCaseResults
-        .map(
-          (tc: BackendTestCaseResult) =>
-            `TC_START:${tc.index}\nOUTPUT:${tc.output}\nTIME:${tc.timeMs}\nTC_END:${tc.index}`
-        )
-        .join("\n");
-
-      // ✅ ResultComparator matches by index: result[0] → selectedTestCases[0], etc.
-      const comparisonResult = ResultComparator.compareResults(
-        stdout,
-        selectedTestCases,
-        result.metrics.totalMemoryMb * 1024 * 1024
-      );
-
-      setTestCaseResults(comparisonResult.results);
+      setTestCaseResults(mappedResults);
       setExecutionMode("results");
 
-      if (comparisonResult.allPassed) {
+      if (result.verdict === "ACCEPTED") {
         toast.success("All test cases passed! ✓");
       } else {
-        toast.error("Some test cases failed");
+        toast.error(`Test case ${result.failedTestCaseIndex} failed`);
       }
     } catch (error) {
       console.error("Execution error:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error";
-      toast.error("Failed to execute code: " + errorMessage);
       setExecutionMode("idle");
     } finally {
       setIsExecuting(false);
     }
   };
+
   const handleSubmit = async () => {
     if (!code.trim()) {
       toast.error("Please write some code first");
-      return;
-    }
-
-    if (!question.testcases || question.testcases.length === 0) {
-      toast.error("No test cases available");
       return;
     }
 
@@ -345,89 +321,18 @@ export function QuestionCompilerLayout({
     toast.loading("Submitting your code...", { id: "submit" });
 
     try {
-      const assembled = CodeAssembler.assemble(
-        selectedLanguage.name,
-        code,
-        question.testcases
-      );
+      await submitCodeMutation.mutateAsync({
+        questionId: question.id,
+        request: {
+          code,
+          language: LANG_KEY_MAP[selectedLanguage.name] || selectedLanguage.name.toLowerCase(),
+        },
+      });
 
-      const response = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080/api"
-        }/question-compiler/execute`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${
-              document.cookie.split("token=")[1]?.split(";")[0]
-            }`,
-          },
-          body: JSON.stringify({
-            language: assembled.language,
-            code: assembled.fullCode,
-          }),
-        }
-      );
-
-      const result = await response.json();
       toast.dismiss("submit");
-
-      if (!result.success) {
-        toast.error(result.error || "Submission failed");
-        return;
-      }
-
-      const stdout = result.testCaseResults
-        .map(
-          (tc: BackendTestCaseResult) =>
-            `TC_START:${tc.index}\nOUTPUT:${tc.output}\nTIME:${tc.timeMs}\nTC_END:${tc.index}`
-        )
-        .join("\n");
-
-      const comparisonResult = ResultComparator.compareResults(
-        stdout,
-        question.testcases,
-        result.metrics.totalMemoryMb * 1024 * 1024
-      );
-
-      const languageMap: Record<string, string> = {
-        Java: "java",
-        Python: "python",
-        JavaScript: "javascript",
-        "C++": "cpp",
-        C: "c",
-        Go: "go",
-        Rust: "rust",
-        TypeScript: "typescript",
-      };
-
-      const approachData = ResultComparator.createApproachData(
-        comparisonResult,
-        code,
-        languageMap[selectedLanguage.name] ||
-          selectedLanguage.name.toLowerCase()
-      );
-
-      createApproachMutation.mutate(
-        { questionId: question.id, data: approachData },
-        {
-          onSuccess: () => {
-            if (comparisonResult.overallStatus === "ACCEPTED") {
-              toast.success("Accepted! Your approach has been saved ✓");
-            } else if (comparisonResult.overallStatus === "WRONG_ANSWER") {
-              toast.error("Wrong Answer - Approach saved for review");
-            } else {
-              toast.error("Time Limit Exceeded - Approach saved for review");
-            }
-          },
-        }
-      );
     } catch (error) {
+      toast.dismiss("submit");
       console.error("Submission error:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error";
-      toast.error("Failed to submit: " + errorMessage);
     } finally {
       setIsExecuting(false);
     }
@@ -620,7 +525,7 @@ export function QuestionCompilerLayout({
         >
           <TestCaseManager
             allTestCases={question.testcases || []}
-            selectedTestCases={selectedTestCases}
+            selectedTestCaseIds={selectedTestCases}
             onTestCaseSelectionChange={setSelectedTestCases}
             results={testCaseResults.length > 0 ? testCaseResults : undefined}
             mode={executionMode === "results" ? "results" : "edit"}

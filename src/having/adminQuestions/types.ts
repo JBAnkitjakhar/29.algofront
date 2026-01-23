@@ -7,7 +7,6 @@ export interface Testcase {
   id: number;
   input: Record<string, unknown>;
   expectedOutput: unknown;
-  expectedTimeLimit: number;
 }
 
 // Question Summary (from /admin/questions/summary)
@@ -19,12 +18,10 @@ export interface QuestionSummary {
   displayOrder: number;
   imageCount: number;
   
-  // ✅ NEW: Code template languages
   userStarterCodeLanguages: string[];
   generalTemplateLanguages: string[];
   correctSolutionLanguages: string[];
   
-  // ✅ NEW: Testcase count
   testcaseCount: number;
   
   createdByName: string;
@@ -65,14 +62,11 @@ export interface QuestionDetail {
   title: string;
   statement: string;
   imageUrls: string[] | null;
-  imageFolderUrl: string | null;
   
-  // ✅ NEW: Code templates (multi-language maps)
   userStarterCode: Record<string, string>;
   generalTemplate: Record<string, string>;
   correctSolution: Record<string, string>;
   
-  // ✅ NEW: Testcases
   testcases: Testcase[];
   
   categoryId: string;
@@ -92,7 +86,6 @@ export interface CreateQuestionRequest {
   level: QuestionLevel;
   displayOrder: number;
   imageUrls?: string[];
-  imageFolderUrl?: string;
   userStarterCode?: Record<string, string>;
   generalTemplate?: Record<string, string>;
   correctSolution?: Record<string, string>;
@@ -108,7 +101,6 @@ export interface UpdateQuestionRequest {
   level?: QuestionLevel;
   displayOrder?: number;
   imageUrls?: string[];
-  imageFolderUrl?: string;
   userStarterCode?: Record<string, string>;
   generalTemplate?: Record<string, string>;
   correctSolution?: Record<string, string>;

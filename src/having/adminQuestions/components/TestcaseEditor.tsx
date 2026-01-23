@@ -38,9 +38,9 @@ export function TestcaseEditor({ testcases, onChange }: TestcaseEditorProps) {
       // Validate structure
       for (let i = 0; i < parsed.length; i++) {
         const tc = parsed[i];
-        if (!tc.id || !tc.input || tc.expectedOutput === undefined || !tc.expectedTimeLimit) {
+        if (!tc.id || !tc.input || tc.expectedOutput === undefined) {
           setError(
-            `Testcase ${i + 1}: Must have id, input, expectedOutput, expectedTimeLimit`
+            `Testcase ${i + 1}: Must have id, input, expectedOutput`
           );
           return;
         }
@@ -91,7 +91,7 @@ export function TestcaseEditor({ testcases, onChange }: TestcaseEditorProps) {
           value={jsonText}
           onChange={handleJsonChange}
           language="json"
-          placeholder='[\n  {\n    "id": 1,\n    "input": {"nums": [-1, 0, 1]},\n    "expectedOutput": [[-1, 0, 1]],\n    "expectedTimeLimit": 1000\n  }\n]'
+          placeholder='[\n  {\n    "id": 1,\n    "input": {"nums": [-1, 0, 1]},\n    "expectedOutput": [[-1, 0, 1]]\n  }\n]'
           maxLength={maxSize}
         />
 
@@ -109,7 +109,6 @@ export function TestcaseEditor({ testcases, onChange }: TestcaseEditorProps) {
           <li>• <code className="bg-blue-900/30 px-1 py-0.5 rounded">id</code> - Unique number</li>
           <li>• <code className="bg-blue-900/30 px-1 py-0.5 rounded">input</code> - Object with parameter names as keys</li>
           <li>• <code className="bg-blue-900/30 px-1 py-0.5 rounded">expectedOutput</code> - Expected result (any JSON value)</li>
-          <li>• <code className="bg-blue-900/30 px-1 py-0.5 rounded">expectedTimeLimit</code> - Time limit in milliseconds (100-10000)</li>
         </ul>
       </div>
 

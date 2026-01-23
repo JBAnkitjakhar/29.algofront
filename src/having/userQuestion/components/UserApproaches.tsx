@@ -184,7 +184,7 @@ export function UserApproaches({
               </div>
             )}
 
-            {approach.status === "TLE" && approach.tleTestcase && (
+            {approach.status === "TIME_LIMIT_EXCEEDED" && approach.tleTestcase && (
               <div className="mb-2 p-2 bg-yellow-900/10 border border-yellow-900/30 rounded text-xs">
                 <div className="text-yellow-400 font-medium mb-1">Time Limit Exceeded:</div>
                 <div className="text-gray-400">

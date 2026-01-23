@@ -213,7 +213,7 @@ export function ApproachEditor({ approach, onBack }: ApproachEditorProps) {
         return <CheckCircle className="w-5 h-5 text-green-400" />;
       case "WRONG_ANSWER":
         return <XCircle className="w-5 h-5 text-red-400" />;
-      case "TLE":
+      case "TIME_LIMIT_EXCEEDED":
         return <Clock className="w-5 h-5 text-yellow-400" />;
     }
   };
@@ -224,7 +224,7 @@ export function ApproachEditor({ approach, onBack }: ApproachEditorProps) {
         return "bg-green-900/20 border-green-500 text-green-400";
       case "WRONG_ANSWER":
         return "bg-red-900/20 border-red-500 text-red-400";
-      case "TLE":
+      case "TIME_LIMIT_EXCEEDED":
         return "bg-yellow-900/20 border-yellow-500 text-yellow-400";
     }
   };
@@ -403,7 +403,7 @@ export function ApproachEditor({ approach, onBack }: ApproachEditorProps) {
                 </div>
               )}
 
-              {approach.status === "TLE" && approach.tleTestcase && (
+              {approach.status === "TIME_LIMIT_EXCEEDED" && approach.tleTestcase && (
                 <div className="space-y-2 text-sm">
                   <div className="font-medium">Time Limit Exceeded:</div>
                   <div className="bg-[#1A1A1A] rounded p-2 space-y-1 font-mono text-xs">

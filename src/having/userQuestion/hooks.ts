@@ -1,12 +1,13 @@
-// src/having/userQuestion/hooks.ts
+// src/having/userQuestion/hooks.ts - COMPLETE FILE
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { userQuestionService } from "./service";
 import { USER_QUESTION_QUERY_KEYS } from "./constants";
 import toast from "react-hot-toast";
 import type {
-  CreateApproachRequest,
   UpdateApproachRequest,
+  RunCodeRequest,
+  SubmitCodeRequest,
 } from "./types";
 
 export function useQuestionById(id: string) {
@@ -154,40 +155,6 @@ export function useApproachDetail(questionId: string, approachId: string) {
   });
 }
 
-export function useCreateApproach() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({
-      questionId,
-      data,
-    }: {
-      questionId: string;
-      data: CreateApproachRequest;
-    }) => {
-      const response = await userQuestionService.createApproach(
-        questionId,
-        data
-      );
-      if (!response.success) {
-        throw new Error(
-          response.error || response.message || "Failed to create approach"
-        );
-      }
-      return response.data!;
-    },
-    onSuccess: (_, { questionId }) => {
-      queryClient.invalidateQueries({
-        queryKey: USER_QUESTION_QUERY_KEYS.APPROACHES(questionId),
-      });
-      toast.success("Approach submitted successfully!");
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
-  });
-}
-
 export function useUpdateApproach() {
   const queryClient = useQueryClient();
 
@@ -261,7 +228,6 @@ export function useDeleteApproach() {
   });
 }
 
-// ✅ NEW: Single hook for complexity analysis (replaces both old hooks)
 export function useAnalyzeComplexity() {
   const queryClient = useQueryClient();
 
@@ -287,15 +253,80 @@ export function useAnalyzeComplexity() {
       return response.data!;
     },
     onSuccess: (newData, { questionId, approachId }) => {
-      // ✅ Update cached approach detail
       queryClient.setQueryData(
         USER_QUESTION_QUERY_KEYS.APPROACH_DETAIL(questionId, approachId),
         newData
       );
-      // ✅ Invalidate approaches list to show complexity badge
       queryClient.invalidateQueries({
         queryKey: USER_QUESTION_QUERY_KEYS.APPROACHES(questionId),
       });
+    },
+  });
+}
+
+// ✅ NEW: Run code hook
+export function useRunCode() {
+  return useMutation({
+    mutationFn: async ({
+      questionId,
+      request,
+    }: {
+      questionId: string;
+      request: RunCodeRequest;
+    }) => {
+      const response = await userQuestionService.runCode(questionId, request);
+      if (!response.success) {
+        throw new Error(response.error || "Failed to run code");
+      }
+      return response.data!;
+    },
+    onError: (error: Error) => {
+      if (error.message.includes("busy") || error.message.includes("503")) {
+        toast.error("Execution container is busy. Please try again shortly.");
+      } else {
+        toast.error(error.message);
+      }
+    },
+  });
+}
+
+// ✅ NEW: Submit code hook
+export function useSubmitCode() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      questionId,
+      request,
+    }: {
+      questionId: string;
+      request: SubmitCodeRequest;
+    }) => {
+      const response = await userQuestionService.submitCode(questionId, request);
+      if (!response.success) {
+        throw new Error(response.error || "Failed to submit code");
+      }
+      return response.data!;
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: USER_QUESTION_QUERY_KEYS.APPROACHES(variables.questionId),
+      });
+
+      if (data.verdict === "ACCEPTED") {
+        toast.success("Accepted! All test cases passed ✓");
+      } else if (data.verdict === "TLE") {
+        toast.error(`Time Limit Exceeded on test case ${data.failedTestCaseIndex}`);
+      } else {
+        toast.error(`Wrong Answer on test case ${data.failedTestCaseIndex}`);
+      }
+    },
+    onError: (error: Error) => {
+      if (error.message.includes("busy") || error.message.includes("503")) {
+        toast.error("Execution container is busy. Please try again shortly.");
+      } else {
+        toast.error(error.message);
+      }
     },
   });
 }
