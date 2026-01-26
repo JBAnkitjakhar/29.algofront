@@ -97,8 +97,8 @@ export interface QuestionPageData {
 export interface RunCodeRequest {
   code: string;
   language: string;
-  testCases: Array<{  // ✅ Send full testcase objects, not IDs!
-    input: Record<string, unknown>;
+  testCases: Array<{
+    input: unknown[];  // ✅ Changed from Record<string, unknown> to unknown[]
   }>;
 }
 

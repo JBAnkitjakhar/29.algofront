@@ -269,11 +269,15 @@ export function QuestionCompilerLayout({
     setTestCaseResults([]);
 
     try {
-      // ✅ Build array of test case objects with input data
+      // ✅ Build array of test case objects with input as ARRAY
       const testCasesToSend = selectedTestCases.map((tcId) => {
         const testCase = question.testcases.find((tc) => tc.id === tcId)!;
+
+        // ✅ Convert input object to array of values
+        const inputArray = Object.values(testCase.input);
+
         return {
-          input: testCase.input,
+          input: inputArray, // ✅ Now sends [[1,2,3,4,5]] instead of {root: [1,2,3,4,5]}
         };
       });
 
@@ -284,7 +288,7 @@ export function QuestionCompilerLayout({
           language:
             LANG_KEY_MAP[selectedLanguage.name] ||
             selectedLanguage.name.toLowerCase(),
-          testCases: testCasesToSend, // ✅ Send full testcase objects
+          testCases: testCasesToSend,
         },
       });
 
@@ -299,7 +303,7 @@ export function QuestionCompilerLayout({
             testCase,
             userOutput:
               backendResult.userOutput || backendResult.error || "No output",
-            actualTime: 0, // Backend doesn't return individual times in run mode
+            actualTime: 0,
             status:
               backendResult.status === "PASS"
                 ? "passed"
