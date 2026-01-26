@@ -1,0 +1,8 @@
+#### GET request to example server
+#GET https://examples.http-client.intellij.net/get
+#    ?generated-in=IntelliJ IDEA
+
+POST http://localhost:8080/api/question-compiler/6941a504989cd300adcaa48f/run
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhbmtpdGpha2hhcmFiY0BnbWFpbC5jb20iLCJpYXQiOjE3NjkzNTA2MTQsImV4cCI6MTc2OTQzNzAxNH0.SWHwMA6UwCC0t2IGHkXmEBrvDCo2TFM5ykXy2H87WOPtPrNJ6RN5EE-YnrD98xY3stTxHUw1qWidBLEKd5pakw
+< ./request-body.json

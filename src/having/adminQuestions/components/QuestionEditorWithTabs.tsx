@@ -9,7 +9,7 @@ import type { Testcase } from "../types";
 import { CodeTemplateEditor } from "./CodeTemplateEditor";
 import { TestcaseEditor } from "./TestcaseEditor";
 
-type EditorTab = "statement" | "userStarterCode" | "correctSolution" | "testcases";
+type EditorTab = "statement" | "userStarterCode" | "submitTemplate" | "runTemplate" | "testcases";  // ✅ CHANGED
 
 interface QuestionEditorWithTabsProps {
   // Statement
@@ -21,8 +21,11 @@ interface QuestionEditorWithTabsProps {
   userStarterCode: Record<string, string>;
   onUserStarterCodeChange: (code: Record<string, string>) => void;
   
-  correctSolution: Record<string, string>;
-  onCorrectSolutionChange: (code: Record<string, string>) => void;
+  submitTemplate: Record<string, string>;          // ✅ RENAMED from generalTemplate
+  onSubmitTemplateChange: (code: Record<string, string>) => void;  // ✅ RENAMED
+  
+  runTemplate: Record<string, string>;             // ✅ RENAMED from correctSolution
+  onRunTemplateChange: (code: Record<string, string>) => void;     // ✅ RENAMED
   
   // Testcases
   testcases: Testcase[];
@@ -35,8 +38,10 @@ export function QuestionEditorWithTabs({
   onEditorReady,
   userStarterCode,
   onUserStarterCodeChange,
-  correctSolution,
-  onCorrectSolutionChange,
+  submitTemplate,           // ✅ RENAMED
+  onSubmitTemplateChange,   // ✅ RENAMED
+  runTemplate,              // ✅ RENAMED
+  onRunTemplateChange,      // ✅ RENAMED
   testcases,
   onTestcasesChange,
 }: QuestionEditorWithTabsProps) {
@@ -45,7 +50,8 @@ export function QuestionEditorWithTabs({
   const tabs = [
     { id: "statement" as const, label: "Statement", icon: "📝" },
     { id: "userStarterCode" as const, label: "User Starter Code", icon: "🎯" },
-    { id: "correctSolution" as const, label: "Correct Solution", icon: "✅" },
+    { id: "submitTemplate" as const, label: "Submit Template", icon: "📤" },  // ✅ RENAMED
+    { id: "runTemplate" as const, label: "Run Template", icon: "▶️" },        // ✅ RENAMED
     { id: "testcases" as const, label: "Testcases", icon: "🧪" },
   ];
 
@@ -98,14 +104,25 @@ export function QuestionEditorWithTabs({
           />
         )}
 
-        {activeTab === "correctSolution" && (
+        {activeTab === "submitTemplate" && (  // ✅ RENAMED
           <CodeTemplateEditor
-            code={correctSolution}
-            onChange={onCorrectSolutionChange}
-            title="Correct Solution"
-            description="Complete working solution with all implementation details. (Max 23,000 characters per language)"
+            code={submitTemplate}              // ✅ RENAMED
+            onChange={onSubmitTemplateChange}  // ✅ RENAMED
+            title="Submit Template"            // ✅ RENAMED
+            description="Complete template used for submit mode with all test cases. Includes test execution framework. (Max 23,000 characters per language)"  // ✅ UPDATED
             maxLength={23000}
-            placeholder="// Complete working solution"
+            placeholder="// Complete template for submit mode"
+          />
+        )}
+
+        {activeTab === "runTemplate" && (  // ✅ RENAMED
+          <CodeTemplateEditor
+            code={runTemplate}              // ✅ RENAMED
+            onChange={onRunTemplateChange}  // ✅ RENAMED
+            title="Run Template"            // ✅ RENAMED
+            description="Template used for run mode with selected test cases. Used for quick testing. (Max 23,000 characters per language)"  // ✅ UPDATED
+            maxLength={23000}
+            placeholder="// Template for run mode execution"
           />
         )}
 

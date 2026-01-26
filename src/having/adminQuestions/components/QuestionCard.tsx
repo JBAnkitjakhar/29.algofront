@@ -15,7 +15,11 @@ import {
 } from "@heroicons/react/24/outline";
 import { useAuth } from "@/hooks/useAuth";
 import { dateUtils } from "@/lib/utils/common";
-import { QUESTION_LEVEL_LABELS, QUESTION_LEVEL_COLORS, ADMIN_ROUTES } from "@/constants";
+import {
+  QUESTION_LEVEL_LABELS,
+  QUESTION_LEVEL_COLORS,
+  ADMIN_ROUTES,
+} from "@/constants";
 import type { QuestionWithCategory } from "../types";
 import { DeleteQuestionModal } from "./DeleteQuestionModal";
 
@@ -40,7 +44,8 @@ export function QuestionCard({ question }: QuestionCardProps) {
 
   // Check if each code template type exists
   const hasUserStarter = question.userStarterCodeLanguages.length > 0;
-  const hasCorrectSolution = question.correctSolutionLanguages.length > 0;
+  const hasSubmitTemplate = question.submitTemplateLanguages.length > 0; // ✅ NEW
+  const hasRunTemplate = question.runTemplateLanguages.length > 0;
 
   return (
     <>
@@ -49,7 +54,7 @@ export function QuestionCard({ question }: QuestionCardProps) {
           {/* Header */}
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
-              <h3 
+              <h3
                 onClick={handleTitleClick}
                 className="text-lg font-semibold text-white truncate cursor-pointer hover:text-blue-400 transition-colors"
                 title="View question"
@@ -98,44 +103,56 @@ export function QuestionCard({ question }: QuestionCardProps) {
             {question.imageCount > 0 && (
               <div className="flex items-center text-blue-400">
                 <EyeIcon className="h-4 w-4 mr-1" />
-                {question.imageCount} image{question.imageCount !== 1 ? "s" : ""}
+                {question.imageCount} image
+                {question.imageCount !== 1 ? "s" : ""}
               </div>
             )}
 
             {question.testcaseCount > 0 && (
               <div className="flex items-center text-amber-400">
                 <BeakerIcon className="h-4 w-4 mr-1" />
-                {question.testcaseCount} testcase{question.testcaseCount !== 1 ? "s" : ""}
+                {question.testcaseCount} testcase
+                {question.testcaseCount !== 1 ? "s" : ""}
               </div>
             )}
 
             {question.solutionCount > 0 && (
               <div className="flex items-center text-purple-400">
-                {question.solutionCount} solution{question.solutionCount !== 1 ? "s" : ""}
+                {question.solutionCount} solution
+                {question.solutionCount !== 1 ? "s" : ""}
               </div>
             )}
           </div>
 
           {/* Code Templates - Only show if any exist */}
-          {(hasUserStarter || hasCorrectSolution) && (
+          {(hasUserStarter || hasSubmitTemplate || hasRunTemplate) && (
             <div className="mt-3 flex items-center gap-2 text-sm flex-wrap">
               <CodeBracketIcon className="h-4 w-4 text-green-400 flex-shrink-0" />
-              
+
               {hasUserStarter && (
-                <span 
+                <span
                   className="px-2 py-0.5 bg-green-900/30 text-green-300 rounded border border-green-500/30 cursor-pointer"
                   title={`Starter: ${question.userStarterCodeLanguages.join(", ")}`}
                 >
                   userStarter
                 </span>
               )}
-              
-              {hasCorrectSolution && (
-                <span 
-                  className="px-2 py-0.5 bg-purple-900/30 text-purple-300 rounded border border-purple-500/30 cursor-pointer"
-                  title={`Sol: ${question.correctSolutionLanguages.join(", ")}`}
+
+              {hasSubmitTemplate && (
+                <span
+                  className="px-2 py-0.5 bg-blue-900/30 text-blue-300 rounded border border-blue-500/30 cursor-pointer"
+                  title={`Submit: ${question.submitTemplateLanguages.join(", ")}`}
                 >
-                  correctSol
+                  submitTemplate
+                </span>
+              )}
+
+              {hasRunTemplate && (
+                <span
+                  className="px-2 py-0.5 bg-purple-900/30 text-purple-300 rounded border border-purple-500/30 cursor-pointer"
+                  title={`Run: ${question.runTemplateLanguages.join(", ")}`}
+                >
+                  runTemplate
                 </span>
               )}
             </div>

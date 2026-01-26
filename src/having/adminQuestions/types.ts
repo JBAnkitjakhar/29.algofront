@@ -2,10 +2,10 @@
 
 export type QuestionLevel = "EASY" | "MEDIUM" | "HARD";
 
-// Testcase structure
+// Testcase structure - Using LinkedHashMap on backend = ordered object on frontend
 export interface Testcase {
   id: number;
-  input: Record<string, unknown>;
+  input: Record<string, unknown>;  // ✅ Ordered map: { "grid": [[...]], "target": 5 }
   expectedOutput: unknown;
 }
 
@@ -17,10 +17,11 @@ export interface QuestionSummary {
   categoryId: string;
   displayOrder: number;
   imageCount: number;
-  methodName: string; // ✅ NEW
+  methodName: string;
   
   userStarterCodeLanguages: string[];
-  correctSolutionLanguages: string[];
+  submitTemplateLanguages: string[];  // ✅ RENAMED from generalTemplateLanguages
+  runTemplateLanguages: string[];     // ✅ RENAMED from correctSolutionLanguages
   
   testcaseCount: number;
   createdByName: string;
@@ -64,7 +65,8 @@ export interface QuestionDetail {
   methodName: string;
   
   userStarterCode: Record<string, string>;
-  correctSolution: Record<string, string>;
+  submitTemplate: Record<string, string>;  // ✅ RENAMED from generalTemplate
+  runTemplate: Record<string, string>;     // ✅ RENAMED from correctSolution
   
   testcases: Testcase[];
   
@@ -87,7 +89,8 @@ export interface CreateQuestionRequest {
   methodName: string;
   imageUrls?: string[];
   userStarterCode?: Record<string, string>;
-  correctSolution?: Record<string, string>;
+  submitTemplate?: Record<string, string>;  // ✅ RENAMED from generalTemplate
+  runTemplate?: Record<string, string>;     // ✅ RENAMED from correctSolution
   testcases?: Testcase[];
 }
 
@@ -99,10 +102,11 @@ export interface UpdateQuestionRequest {
   categoryId?: string;
   level?: QuestionLevel;
   displayOrder?: number;
-  methodName?: string; // ✅ NEW
+  methodName?: string;
   imageUrls?: string[];
   userStarterCode?: Record<string, string>;
-  correctSolution?: Record<string, string>;
+  submitTemplate?: Record<string, string>;  // ✅ RENAMED from generalTemplate
+  runTemplate?: Record<string, string>;     // ✅ RENAMED from correctSolution
   testcases?: Testcase[];
 }
 

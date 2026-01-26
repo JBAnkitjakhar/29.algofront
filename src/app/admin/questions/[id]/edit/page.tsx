@@ -46,7 +46,8 @@ export default function EditQuestionPage() {
     methodName: "",
     imageUrls: [],
     userStarterCode: {},
-    correctSolution: {},
+    submitTemplate: {},    // ✅ RENAMED from correctSolution
+    runTemplate: {},       // ✅ NEW
     testcases: [],
   });
   const [errors, setErrors] = useState<string[]>([]);
@@ -75,7 +76,8 @@ export default function EditQuestionPage() {
           methodName: question.methodName,
           imageUrls: question.imageUrls || [],
           userStarterCode: question.userStarterCode || {},
-          correctSolution: question.correctSolution || {},
+          submitTemplate: question.submitTemplate || {},  // ✅ RENAMED
+          runTemplate: question.runTemplate || {},        // ✅ RENAMED
           testcases: question.testcases || [],
         });
         setStatementCharCount(question.statement.trim().length);
@@ -260,11 +262,20 @@ export default function EditQuestionPage() {
       }
     });
 
-    // Correct Solution validation
-    Object.entries(formData.correctSolution || {}).forEach(([lang, code]) => {
-      if (code.length > QUESTION_VALIDATION.CORRECT_SOLUTION_MAX_LENGTH) {
+    // Submit Template validation  // ✅ RENAMED
+    Object.entries(formData.submitTemplate || {}).forEach(([lang, code]) => {
+      if (code.length > QUESTION_VALIDATION.SUBMIT_TEMPLATE_MAX_LENGTH) {
         errors.push(
-          `Correct solution for ${lang} exceeds ${QUESTION_VALIDATION.CORRECT_SOLUTION_MAX_LENGTH} characters`
+          `Submit template for ${lang} exceeds ${QUESTION_VALIDATION.SUBMIT_TEMPLATE_MAX_LENGTH} characters`
+        );
+      }
+    });
+
+    // Run Template validation  // ✅ NEW
+    Object.entries(formData.runTemplate || {}).forEach(([lang, code]) => {
+      if (code.length > QUESTION_VALIDATION.RUN_TEMPLATE_MAX_LENGTH) {
+        errors.push(
+          `Run template for ${lang} exceeds ${QUESTION_VALIDATION.RUN_TEMPLATE_MAX_LENGTH} characters`
         );
       }
     });
@@ -310,8 +321,10 @@ export default function EditQuestionPage() {
         JSON.stringify(question?.imageUrls) ||
       JSON.stringify(updatedFormData.userStarterCode) !==
         JSON.stringify(question?.userStarterCode) ||
-      JSON.stringify(updatedFormData.correctSolution) !==
-        JSON.stringify(question?.correctSolution) ||
+      JSON.stringify(updatedFormData.submitTemplate) !==       // ✅ RENAMED
+        JSON.stringify(question?.submitTemplate) ||
+      JSON.stringify(updatedFormData.runTemplate) !==          // ✅ RENAMED
+        JSON.stringify(question?.runTemplate) ||
       JSON.stringify(updatedFormData.testcases) !==
         JSON.stringify(question?.testcases);
 
@@ -529,9 +542,13 @@ export default function EditQuestionPage() {
             onUserStarterCodeChange={(code) =>
               updateFormData("userStarterCode", code)
             }
-            correctSolution={formData.correctSolution || {}}
-            onCorrectSolutionChange={(code) =>
-              updateFormData("correctSolution", code)
+            submitTemplate={formData.submitTemplate || {}}        // ✅ RENAMED
+            onSubmitTemplateChange={(code) =>                     // ✅ RENAMED
+              updateFormData("submitTemplate", code)
+            }
+            runTemplate={formData.runTemplate || {}}              // ✅ NEW
+            onRunTemplateChange={(code) =>                        // ✅ NEW
+              updateFormData("runTemplate", code)
             }
             testcases={formData.testcases || []}
             onTestcasesChange={(testcases) =>
@@ -751,12 +768,23 @@ export default function EditQuestionPage() {
 
             <div className="p-3 bg-gray-800 rounded-lg border border-gray-700">
               <h3 className="font-semibold text-white mb-1">
-                ✅ Correct Solution
+                📤 Submit Template
               </h3>
               <ul className="space-y-1 text-xs text-gray-400">
-                <li>• Complete solution</li>
+                <li>• For submit mode</li>
                 <li>• 23k chars per language</li>
-                <li>• Working implementation</li>
+                <li>• Full test framework</li>
+              </ul>
+            </div>
+
+            <div className="p-3 bg-gray-800 rounded-lg border border-gray-700">
+              <h3 className="font-semibold text-white mb-1">
+                ▶️ Run Template
+              </h3>
+              <ul className="space-y-1 text-xs text-gray-400">
+                <li>• For run mode</li>
+                <li>• 23k chars per language</li>
+                <li>• Quick test execution</li>
               </ul>
             </div>
 
@@ -765,7 +793,7 @@ export default function EditQuestionPage() {
               <ul className="space-y-1 text-xs text-gray-400">
                 <li>• JSON input/output</li>
                 <li>• 30k chars total</li>
-                <li>• Time limits (ms)</li>
+                <li>• Ordered parameters</li>
               </ul>
             </div>
           </div>
